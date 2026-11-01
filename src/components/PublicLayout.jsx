@@ -9,7 +9,7 @@ export default function PublicLayout() {
             <div className="phone">
                 <header className="header">
                     <Link to="/" className="logo-link" aria-label="HIIPS360 home">
-                        <span className="logo">
+                        <span className="app-logo">
                             HIIPS<span>360</span>
                         </span>
                     </Link>

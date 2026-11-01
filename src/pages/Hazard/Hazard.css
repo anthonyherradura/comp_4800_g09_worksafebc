@@ -381,6 +381,7 @@
     background: var(--wsbc-ash-grey);
     color: var(--wsbc-bodycopy);
     text-align: left;
+    overflow-wrap: anywhere; /* long URLs in the development-only error detail */
 }
 
 .hz-status {

@@ -33,7 +33,7 @@ export default function SummaryPage() {
 
     if (hazards.length === 0) {
         return (
-            <div className="content">
+            <div className="page-content">
                 <h1 className="sm-title">Summary</h1>
                 <p className="sm-note">Prototype. Hazards are kept on this device until you refresh.</p>
                 <p className="sm-empty">No hazards recorded yet.</p>
@@ -45,7 +45,7 @@ export default function SummaryPage() {
     }
 
     return (
-        <div className="content">
+        <div className="page-content">
             <h1 className="sm-title">Summary</h1>
             <p className="sm-note">Prototype. Hazards are kept on this device until you refresh.</p>
 

@@ -100,7 +100,7 @@ export default function LandingPage() {
     if (isInstalled) return <Navigate to="/jobs" replace />;
 
     return (
-        <div className="content landing">
+        <div className="page-content landing">
             <section className="landing-hero" aria-labelledby="landing-title">
                 <div className="landing-inner">
                     <p className="landing-eyebrow">Hazard Identification Inspection Protocol Sheets</p>

@@ -8,7 +8,7 @@ export default function SheetsPage() {
     const sheet = SHEETS.find((s) => s.sheetId === sheetId);
 
     return (
-        <div className="content">
+        <div className="page-content">
             <Link to="/home">Back to home</Link>
             <h1>{sheet ? sheet.title : "Find a protocol sheet"}</h1>
             <SheetSearch

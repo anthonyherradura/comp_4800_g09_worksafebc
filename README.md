@@ -359,7 +359,7 @@ There is no `npm run seed` yet.
 
 ## Working on the code
 
-- **Adding a page.** Create `src/pages/<Name>/<Name>.jsx` and `<Name>.css`, with `<div className="content">` as the root element. Add its route in `src/App.jsx`. If it belongs in the bottom nav, add an entry and an inline SVG icon to `NAV_ITEMS` in `src/components/Layout.jsx`.
+- **Adding a page.** Create `src/pages/<Name>/<Name>.jsx` and `<Name>.css`, with `<div className="page-content">` as the root element. Don't use `content`: `wsbc.css` defines it for its tab panels (absolutely positioned, grey border), and it covers the header. Check a new generic class name against `wsbc.css` before using it. Add its route in `src/App.jsx`. If it belongs in the bottom nav, add an entry and an inline SVG icon to `NAV_ITEMS` in `src/components/Layout.jsx`.
 - **Talking to the API.** Only `src/auth/authService.js` calls `/api/auth`. It returns `{ user }` or throws an Error whose message is safe to show.
 - **Validation.** `src/auth/validation.js` is imported by both the forms and the server, so keep it free of browser APIs.
 - **Match filename casing in imports.** Windows ignores case but Linux and CI don't, so `./HomePage.css` will break a build if the file is `Homepage.css`.

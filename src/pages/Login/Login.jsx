@@ -47,7 +47,7 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="content auth-page">
+        <div className="page-content auth-page">
             <h1 className="auth-title">Sign in</h1>
 
             <form className="auth-form" onSubmit={handleSubmit} noValidate>

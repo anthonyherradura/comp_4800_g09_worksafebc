@@ -44,7 +44,7 @@ export default function RegisterPage() {
     };
 
     return (
-        <div className="content auth-page">
+        <div className="page-content auth-page">
             <h1 className="auth-title">Create an account</h1>
 
             <form className="auth-form" onSubmit={handleSubmit} noValidate>

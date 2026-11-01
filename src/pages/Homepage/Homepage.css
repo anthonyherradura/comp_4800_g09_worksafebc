@@ -1,4 +1,5 @@
-.content {
+/* Not .content: wsbc.css uses that name for its tab panels (absolute, grey border) */
+.page-content {
     flex: 1;
     display: flex;
     flex-direction: column;

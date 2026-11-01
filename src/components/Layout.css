@@ -25,7 +25,8 @@
     padding: 0 16px;
 }
 
-.logo {
+/* Not .logo: wsbc.css sets .logo { width: 90% }, which squeezes the sign-out button */
+.app-logo {
     margin: 0;
     font-size: 2.75rem;
     font-weight: 500;
@@ -33,7 +34,7 @@
     color: var(--wsbc-white);
 }
 
-.logo span {
+.app-logo span {
     color: var(--wsbc-black);
 }
 

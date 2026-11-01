@@ -56,7 +56,7 @@ export default function Layout() {
         <div className="app-shell">
             <div className="phone">
                 <header className="header">
-                    <h1 className="logo">
+                    <h1 className="app-logo">
                         HIIPS<span>360</span>
                     </h1>
                     <button type="button" className="signout-btn" onClick={handleSignOut}>

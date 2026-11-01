@@ -15,7 +15,7 @@ export default function HomePage() {
     }
 
     return (
-        <div className="content">
+        <div className="page-content">
             {currentJob && (
                 <p className="home-job">
                     <span>Job: <strong>{currentJob.label}</strong></span>

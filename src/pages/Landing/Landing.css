@@ -1,6 +1,6 @@
 /* The hero runs edge to edge, so sections handle their own padding.
-   Doubled class so this beats .content, which is defined in a stylesheet that loads later */
-.content.landing {
+   Doubled class so this beats .page-content, which is defined in a stylesheet that loads later */
+.page-content.landing {
     flex: 1 0 auto;
     gap: 0;
     padding: 0;
