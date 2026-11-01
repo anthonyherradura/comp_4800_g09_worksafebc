@@ -1,28 +1,32 @@
+import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useHazards } from "../../context/HazardContext";
 import { STATUS_LABEL, getHazardStatus } from "../../data/hazardStatus";
-import { CameraPlusIcon, BackIcon } from "./HazardIcons";
+import { BackIcon } from "./HazardIcons";
 import "./Hazard.css";
 
-// Page 3: hazard info, photo collection, comment, delete
+const PlusIcon = () => (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 4v16M4 12h16" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+);
+
+// Page 3: hazard info, comment, photo collection, not applicable, delete
 export default function HazardDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
     const { hazards, updateHazard, addPhotos, deleteHazard } = useHazards();
+    const [tab, setTab] = useState("comment"); // "comment" | "photos"
     const hazard = hazards.find((h) => h.id === id);
 
     // Happens if the page is refreshed (data only lives in memory for now)
     if (!hazard) {
         return (
-            <div className="hz-page">
-                <div className="hz-outer">
-                    <section className="hz-card hz-card--scroll">
-                        <p className="hz-empty">Hazard not found.</p>
-                        <Link to="/hazard" className="hz-back">
-                            <BackIcon /> Back
-                        </Link>
-                    </section>
-                </div>
+            <div className="hd-page">
+                <p className="hz-empty">Hazard not found.</p>
+                <Link to="/hazard" className="hd-back">
+                    <BackIcon /> Back
+                </Link>
             </div>
         );
     }
@@ -45,74 +49,110 @@ export default function HazardDetail() {
     };
 
     return (
-        <div className="hz-page">
-            <div className="hz-outer">
-                <section className="hz-card hz-card--scroll">
-                    <div className="hz-detail-head">
-                        <Link to="/hazard" className="hz-back">
-                            <BackIcon /> Back
-                        </Link>
-                        <h2 className="hz-title">Hazard</h2>
-                        <span />
-                    </div>
-                    <div className="hz-divider" />
+        <div className="hd-page">
+            <div className="hd-top">
+                <h2 className="hd-title">Hazard details</h2>
+                <Link to="/hazard" className="hd-back">
+                    <BackIcon /> Back
+                </Link>
+            </div>
 
-                    <div className="hz-name hz-name--solo">{hazard.name}</div>
-                    <p className="hz-status-line" role="status">
-                        Status: {STATUS_LABEL[getHazardStatus(hazard)]}
-                    </p>
-
-                    <div className="hz-chips">
-                        <span className="hz-chip"></span>
-                        <span className="hz-chip"></span>
-                        <span className="hz-chip"></span>
+            <div className="hd-panel">
+                <div className="hd-summary">
+                    <div className="hd-head">
+                        <span className="hd-name">{hazard.name}</span>
+                        <span className="hd-status" role="status">
+                            {STATUS_LABEL[getHazardStatus(hazard)]}
+                        </span>
                     </div>
 
+                    {/* Three small rectangular tiles. The third is left blank for now */}
+                    <div className="hd-tiles">
+                        <span className="hd-tile">
+                            {created.toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                        </span>
+                        <span className="hd-tile">
+                            {count} photo{count === 1 ? "" : "s"}
+                        </span>
+                        <span className="hd-tile hd-tile--blank" />
+                    </div>
+                </div>
+            </div>
+
+            <div className="hd-tabs" role="tablist" aria-label="Hazard details">
+                <button
+                    type="button"
+                    role="tab"
+                    id="hd-tab-comment"
+                    aria-selected={tab === "comment"}
+                    aria-controls="hd-panel-comment"
+                    className="hd-tab"
+                    onClick={() => setTab("comment")}
+                >
+                    Comment
+                </button>
+                <button
+                    type="button"
+                    role="tab"
+                    id="hd-tab-photos"
+                    aria-selected={tab === "photos"}
+                    aria-controls="hd-panel-photos"
+                    className="hd-tab"
+                    onClick={() => setTab("photos")}
+                >
+                    Photos ({count})
+                </button>
+            </div>
+
+            {tab === "comment" ? (
+                <div role="tabpanel" id="hd-panel-comment" aria-labelledby="hd-tab-comment">
                     <textarea
-                        className="hz-textarea"
+                        className="hd-textarea"
                         placeholder="Add a comment"
                         aria-label="Comment"
                         value={hazard.comment}
                         onChange={(e) => updateHazard(id, { comment: e.target.value })}
                     />
+                </div>
+            ) : (
+                <div role="tabpanel" id="hd-panel-photos" aria-labelledby="hd-tab-photos" className="hd-photos">
+                    <label className="hd-add">
+                        <PlusIcon />
+                        Add photos
+                        <input
+                            className="hz-visually-hidden"
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            aria-label="Add photos"
+                            onChange={handleAddPhotos}
+                        />
+                    </label>
 
-                    <div className="hz-frame">
-                        <label className="hz-photo">
-                            <CameraPlusIcon />
-                            <input
-                                className="hz-visually-hidden"
-                                type="file"
-                                accept="image/*"
-                                multiple
-                                aria-label="Add photos"
-                                onChange={handleAddPhotos}
-                            />
-                        </label>
-                    </div>
-
-                    <div className="hz-frame">
-                        <div className="hz-gallery">
-                            {count === 0 ? (
-                                <span className="hz-gallery-empty">No photos yet</span>
-                            ) : (
-                                hazard.photos.map((url) => <img key={url} src={url} alt="Hazard" />)
-                            )}
+                    {count === 0 ? (
+                        <p className="hd-gallery-empty">No photos yet</p>
+                    ) : (
+                        <div className="hd-gallery">
+                            {hazard.photos.map((url) => (
+                                <img key={url} src={url} alt="Hazard" />
+                            ))}
                         </div>
-                    </div>
+                    )}
+                </div>
+            )}
 
-                    <button
-                        type="button"
-                        className="btn hz-na-toggle"
-                        aria-pressed={hazard.notApplicable}
-                        onClick={() => updateHazard(id, { notApplicable: !hazard.notApplicable })}
-                    >
-                        {hazard.notApplicable ? "Mark as applicable" : "Mark not applicable"}
-                    </button>
-
-                    <button type="button" className="btn hz-delete" onClick={handleDelete}>
-                        Delete
-                    </button>
-                </section>
+            <div className="hd-actions">
+                <button
+                    type="button"
+                    className="btn hd-na"
+                    aria-pressed={Boolean(hazard.notApplicable)}
+                    onClick={() => updateHazard(id, { notApplicable: !hazard.notApplicable })}
+                >
+                    {hazard.notApplicable ? "Mark as applicable" : "Mark not applicable"}
+                </button>
+                <button type="button" className="btn hd-delete" onClick={handleDelete}>
+                    Delete
+                </button>
             </div>
         </div>
     );
