@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import AuthProvider from "./auth/AuthProvider";
 import Layout from "./components/Layout";
 import PublicLayout from "./components/PublicLayout";
@@ -35,28 +35,35 @@ export default function App() {
             <Route path="/register" element={<RegisterPage />} />
           </Route>
 
-          {/* Signed-in pages: header + nav bar, and job/hazard data shared across them */}
+          {/* Signed-in pages share job/hazard data */}
           <Route
             element={
               <RequireAuth>
                 <JobProvider>
                   <HazardProvider>
-                    <Layout />
+                    <Outlet />
                   </HazardProvider>
                 </JobProvider>
               </RequireAuth>
             }
           >
-            <Route path="/jobs" element={<JobsPage />} />
-            <Route path="/home" element={<HomePage />} />
-            <Route path="/planning" element={<PlanningPage />} />
-            <Route path="/sheets" element={<SheetsPage />} />
-            <Route path="/pdfs" element={<PdfsPage />} />
-            <Route path="/sheets/:sheetId" element={<SheetsPage />} />
-            <Route path="/hazard" element={<HazardList />} />
-            <Route path="/hazard/new" element={<HazardAdd />} />
-            <Route path="/hazard/:id" element={<HazardDetail />} />
-            <Route path="/summary" element={<SummaryPage />} />
+            {/* Job selection stands on its own: header only, no nav bar. Reached from the header's job button. */}
+            <Route element={<Layout showNav={false} />}>
+              <Route path="/jobs" element={<JobsPage />} />
+            </Route>
+
+            {/* Everything else: header + nav bar */}
+            <Route element={<Layout />}>
+              <Route path="/home" element={<HomePage />} />
+              <Route path="/planning" element={<PlanningPage />} />
+              <Route path="/sheets" element={<SheetsPage />} />
+              <Route path="/pdfs" element={<PdfsPage />} />
+              <Route path="/sheets/:sheetId" element={<SheetsPage />} />
+              <Route path="/hazard" element={<HazardList />} />
+              <Route path="/hazard/new" element={<HazardAdd />} />
+              <Route path="/hazard/:id" element={<HazardDetail />} />
+              <Route path="/summary" element={<SummaryPage />} />
+            </Route>
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

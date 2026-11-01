@@ -14,6 +14,12 @@
     background: var(--wsbc-silver-grey);
 }
 
+.jobs-title {
+    margin: 0;
+    font-size: 1.75rem;
+    line-height: 1.2;
+}
+
 /* ---------- Add bar ---------- */
 .jobs-add {
     display: flex;

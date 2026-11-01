@@ -123,23 +123,3 @@ a:focus-visible {
     outline: 3px solid var(--wsbc-orange);
     outline-offset: 2px;
 }
-.home-job {
-    margin: 0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    font-size: 0.9375rem;
-}
-
-.home-job span {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.home-job a {
-    flex-shrink: 0;
-    font-weight: 700;
-}

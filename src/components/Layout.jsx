@@ -1,5 +1,7 @@
-import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import useAuth from "../auth/useAuth";
+import { useJobs } from "../context/JobContext";
+import { LogoLockup } from "./Logo";
 import "../styles/tokens.css";
 import "./Layout.css";
 
@@ -25,6 +27,12 @@ const HazardIcon = () => (
     </svg>
 );
 
+const JobIcon = () => (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7Zm0 9.6A2.6 2.6 0 1 1 12 6.4a2.6 2.6 0 0 1 0 5.2Z" fill="currentColor" />
+    </svg>
+);
+
 const SummaryIcon = () => (
     <svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="M7 2.5h8l5 5v14H7v-19Z" fill="currentColor" />
@@ -35,17 +43,17 @@ const SummaryIcon = () => (
 
 
 const NAV_ITEMS = [
-    // Home starts at the job list; protocol selection (/home) is part of the same step
-    { to: "/jobs", label: "Home", Icon: HomeIcon, also: ["/home"] },
+    { to: "/home", label: "Home", Icon: HomeIcon },
     { to: "/planning", label: "Planning", Icon: PlanningIcon },
     { to: "/hazard", label: "Hazard", Icon: HazardIcon },
     { to: "/summary", label: "Summary", Icon: SummaryIcon },
 ];
 
-export default function Layout() {
+// showNav: false for job selection (/jobs), which is its own page outside the regular navigation
+export default function Layout({ showNav = true }) {
     const { logout } = useAuth();
+    const { currentJob } = useJobs();
     const navigate = useNavigate();
-    const { pathname } = useLocation();
 
     const handleSignOut = async () => {
         await logout();
@@ -56,9 +64,15 @@ export default function Layout() {
         <div className="app-shell">
             <div className="phone">
                 <header className="header">
-                    <h1 className="logo">
-                        HIIPS<span>360</span>
-                    </h1>
+                    <Link to="/home" className="logo-link" aria-label="HIIPS360 home">
+                        <LogoLockup className="header-logo" />
+                    </Link>
+                    {showNav && (
+                        <Link to="/jobs" className="job-btn" aria-label={currentJob ? `Job: ${currentJob.label}. Change job` : "Select a job"}>
+                            <JobIcon />
+                            <span className="job-btn-label">{currentJob ? currentJob.label : "Select job"}</span>
+                        </Link>
+                    )}
                     <button type="button" className="signout-btn" onClick={handleSignOut}>
                         Sign out
                     </button>
@@ -70,20 +84,20 @@ export default function Layout() {
                     <Outlet />
                 </main>
 
-                <nav className="nav" aria-label="Main navigation">
-                    {NAV_ITEMS.map(({ to, label, Icon, also = [] }) => (
-                        <NavLink
-                            key={to}
-                            to={to}
-                            aria-label={label}
-                            className={({ isActive }) =>
-                                isActive || also.includes(pathname) ? "nav-btn active" : "nav-btn"
-                            }
-                        >
-                            <Icon />
-                        </NavLink>
-                    ))}
-                </nav>
+                {showNav && (
+                    <nav className="nav" aria-label="Main navigation">
+                        {NAV_ITEMS.map(({ to, label, Icon }) => (
+                            <NavLink
+                                key={to}
+                                to={to}
+                                aria-label={label}
+                                className={({ isActive }) => (isActive ? "nav-btn active" : "nav-btn")}
+                            >
+                                <Icon />
+                            </NavLink>
+                        ))}
+                    </nav>
+                )}
             </div>
         </div>
     );

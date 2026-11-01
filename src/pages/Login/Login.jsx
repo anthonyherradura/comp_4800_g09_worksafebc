@@ -3,6 +3,7 @@ import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import useAuth from "../../auth/useAuth";
 import { validateLogin } from "../../auth/validation";
 import FormField from "../../components/FormField";
+import { LogoLockup } from "../../components/Logo";
 import "../../styles/forms.css";
 import "./Login.css";
 
@@ -48,6 +49,7 @@ export default function LoginPage() {
 
     return (
         <div className="page-content auth-page">
+            <LogoLockup color="#E68A00" className="auth-logo" />
             <h1 className="auth-title">Sign in</h1>
 
             <form className="auth-form" onSubmit={handleSubmit} noValidate>

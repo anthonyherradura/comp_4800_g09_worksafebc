@@ -1,4 +1,5 @@
 import { Link, Outlet } from "react-router-dom";
+import { LogoLockup } from "./Logo";
 import "../styles/tokens.css";
 import "./Layout.css";
 
@@ -9,9 +10,7 @@ export default function PublicLayout() {
             <div className="phone">
                 <header className="header">
                     <Link to="/" className="logo-link" aria-label="HIIPS360 home">
-                        <span className="app-logo">
-                            HIIPS<span>360</span>
-                        </span>
+                        <LogoLockup className="header-logo" />
                     </Link>
                 </header>
 

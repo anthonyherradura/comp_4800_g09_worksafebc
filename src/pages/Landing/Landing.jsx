@@ -1,4 +1,5 @@
 import { Link, Navigate } from "react-router-dom";
+import { LogoStacked } from "../../components/Logo";
 import useInstallPrompt from "../../pwa/useInstallPrompt";
 import "./Landing.css";
 
@@ -103,6 +104,9 @@ export default function LandingPage() {
         <div className="page-content landing">
             <section className="landing-hero" aria-labelledby="landing-title">
                 <div className="landing-inner">
+                    <div className="landing-logo">
+                        <LogoStacked />
+                    </div>
                     <p className="landing-eyebrow">Hazard Identification Inspection Protocol Sheets</p>
                     <h1 id="landing-title" className="landing-title">
                         The HIIPS sheets, <span className="landing-title-accent">on your phone</span>

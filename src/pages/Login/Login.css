@@ -3,6 +3,15 @@
     gap: 24px;
 }
 
+/* Light-background lockup */
+.auth-logo {
+    display: block;
+    width: 100%;
+    max-width: 220px;
+    height: auto;
+    margin: 4px auto 0;
+}
+
 .auth-title {
     margin: 0;
     color: var(--wsbc-bodycopy);

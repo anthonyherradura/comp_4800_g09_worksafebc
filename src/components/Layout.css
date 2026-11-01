@@ -31,17 +31,59 @@
     background: var(--header-bg);
 }
 
-.logo {
-    margin: 0;
-    font-size: 1.875rem;
-    line-height: 1.1;
-    font-weight: 500;
-    letter-spacing: -1px;
-    color: var(--wsbc-white);
+.logo-link {
+    display: flex;
+    flex-shrink: 0;
+    border-radius: 6px;
 }
 
-.logo span {
+.logo-link:focus-visible {
+    outline: 3px solid var(--wsbc-black);
+    outline-offset: 2px;
+}
+
+.header-logo {
+    display: block;
+    height: 44px;
+    width: auto;
+}
+
+/* Current job: opens job selection (/jobs) */
+.job-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    min-height: 44px;
+    margin-left: auto;
+    padding: 0 8px;
     color: var(--wsbc-black);
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.job-btn svg {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+}
+
+.job-btn-label {
+    max-width: 9rem;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.job-btn:hover .job-btn-label {
+    text-decoration: underline;
+}
+
+.job-btn:focus-visible {
+    outline: 3px solid var(--wsbc-black);
+    outline-offset: 2px;
+    border-radius: 6px;
 }
 
 .signout-btn {
@@ -77,6 +119,11 @@
     display: flex;
     flex-direction: column;
     min-height: 0;
+}
+
+/* No nav bar below (public pages, job selection): keep the band clear of the home indicator */
+.page:last-child {
+    margin-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
 }
 
 /* ---------- Footer nav: iron grey, labels, orange current item ---------- */

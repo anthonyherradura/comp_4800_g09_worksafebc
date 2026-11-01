@@ -1,12 +1,10 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useJobs } from "../../context/JobContext";
 import "./Homepage.css";
 
 export default function HomePage() {
     const [query, setQuery] = useState("");
     const navigate = useNavigate();
-    const { currentJob } = useJobs();
 
     function handleSearch(e) {
         e.preventDefault();
@@ -16,13 +14,6 @@ export default function HomePage() {
 
     return (
         <div className="page-content">
-            {currentJob && (
-                <p className="home-job">
-                    <span>Job: <strong>{currentJob.label}</strong></span>
-                    <Link to="/jobs">Back to Home</Link>
-                </p>
-            )}
-
             <h1 className="home-title">What work are you inspecting?</h1>
 
             <form className="search" onSubmit={handleSearch}>

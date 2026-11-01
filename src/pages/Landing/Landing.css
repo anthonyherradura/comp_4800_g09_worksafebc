@@ -21,6 +21,21 @@
     color: var(--wsbc-white);
 }
 
+/* Stacked lockup on its orange tile */
+.landing-logo {
+    width: 132px;
+    margin: 0 0 20px;
+    padding: 18px 20px;
+    border-radius: 20px;
+    background: #e68a00;
+}
+
+.landing-logo svg {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
 .landing-eyebrow {
     margin: 0 0 12px;
     color: var(--wsbc-steel-grey);

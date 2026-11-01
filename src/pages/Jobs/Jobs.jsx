@@ -4,7 +4,8 @@ import { useJobs } from "../../context/JobContext";
 import { formatOpened } from "../../data/recentSheets";
 import "./Jobs.css";
 
-// First screen after sign-in. Picking or creating a job leads to protocol selection (/home).
+// Job selection: its own page (no nav bar), shown after sign-in and from the header's job button.
+// Picking or creating a job leads to protocol selection (/home).
 const JOB_START_ROUTE = "/home";
 
 const PlusIcon = () => (
@@ -42,6 +43,8 @@ export default function JobsPage() {
 
     return (
         <div className="jobs-page">
+            <h1 className="jobs-title">Select a job site</h1>
+
             <form className="jobs-panel jobs-add" onSubmit={handleAdd}>
                 <label className="jobs-visually-hidden" htmlFor="job-label">
                     Job site name or address

@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate } from "react-router-dom";
 import useAuth from "../../auth/useAuth";
 import { MIN_PASSWORD_LENGTH, validateRegister } from "../../auth/validation";
 import FormField from "../../components/FormField";
+import { LogoLockup } from "../../components/Logo";
 import "../../styles/forms.css";
 import "../Login/Login.css";
 import "./Register.css";
@@ -45,6 +46,7 @@ export default function RegisterPage() {
 
     return (
         <div className="page-content auth-page">
+            <LogoLockup color="#E68A00" className="auth-logo" />
             <h1 className="auth-title">Create an account</h1>
 
             <form className="auth-form" onSubmit={handleSubmit} noValidate>
