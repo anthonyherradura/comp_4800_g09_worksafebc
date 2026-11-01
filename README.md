@@ -131,6 +131,7 @@ The app shell, sign-in and offline install are in place. The inspection flow its
 | Auth API | Express 5 + Mongoose in `server/`: register, log in, log out and "who am I". Passwords are bcrypt hashes, failed sign-ins are rate-limited, and sessions are an httpOnly cookie stored in MongoDB. |
 | Install | Installable PWA with a service worker. The last signed-in user is cached on the device, so an officer with no signal stays signed in. |
 | Design tokens | WorkSafeBC colours and type as CSS custom properties in `src/styles/tokens.css`. |
+| AI tests | `npm test` runs automated tests of the hazard suggestion feature (API route, Gemini service, browser helper) with Gemini mocked. `npm run test:ai-live` checks the real Gemini API. Results go in the team's Testing Log. |
 
 **Still to build**
 
@@ -143,7 +144,7 @@ The app shell, sign-in and offline install are in place. The inspection flow its
 | Saving inspections (hazards, photos, job sites) in MongoDB | Not built. Hazards are in memory and job sites are in localStorage |
 | On-device inspection storage (Dexie/IndexedDB) | Deferred; see [Design principles](#design-principles) |
 | `wsbc.css` / Bootstrap | Not installed; styling uses the local tokens for now |
-| Automated tests | No test runner yet |
+| Automated tests for the rest of the app | Only the AI feature has them; auth and the pages are still tested by hand (see the Testing Log) |
 
 ## Who it is for
 
@@ -180,6 +181,11 @@ server/
   config.js           Reads and checks .env
   models/User.js      User model (name, email, bcrypt password hash)
   routes/auth.js      /api/auth: register, login, logout, me
+  routes/ai.js        /api/ai: hazard suggestion from a photo and/or description
+  services/gemini.js  The only file that talks to Gemini (main model + fallback)
+tests/                Automated tests (node:test), run with npm test
+scripts/
+  ai-smoke.mjs        Live Gemini check, run with npm run test:ai-live
 src/
   App.jsx             Every route, nested under the public and signed-in layouts
   components/
@@ -298,14 +304,17 @@ Open http://localhost:5173 and choose **Create an account**.
 | Command | Runs |
 |---|---|
 | `npm run dev:all` | API and Vite together (normal use) |
+| `npm run dev:phone` | Same as `dev:all`, but Vite also listens on your network so a phone can open it. See **Trying it on a phone** below |
 | `npm run dev` | Vite dev server only; proxies `/api` to `localhost:3001` |
 | `npm run dev:api` | API only, restarts when `server/` changes |
 | `npm run api` | API only, no restart on change |
 | `npm run build` | Production build to `dist/` |
 | `npm run preview` | Serves the build (also proxies `/api`). Use this to test install and offline behaviour |
 | `npm run lint` | ESLint |
+| `npm test` | Automated tests in `tests/`. Gemini and the network are mocked, so they need no API, database or key, and use no quota |
+| `npm run test:ai-live` | Sends about 10 real requests through the running API to Gemini and prints a results table. Start the API first. Uses your Gemini quota |
 
-There is no `npm run seed` or test runner yet.
+There is no `npm run seed` yet.
 
 **Environment (`.env`)**
 
@@ -314,8 +323,26 @@ There is no `npm run seed` or test runner yet.
 | `MONGODB_URI` | `mongodb://127.0.0.1:27017/hiips360`. Use `127.0.0.1`, not `localhost`: Node tries IPv6 first and the Windows MongoDB only listens on IPv4. |
 | `SESSION_SECRET` | A random 64-character hex string, different for each developer. |
 | `PORT` | `3001`. `vite.config.js` proxies `/api` here. |
+| `GEMINI_API_KEY` | Your own key from Google AI Studio. Only hazard suggestions need it; the API starts without it. |
+| `GEMINI_MODEL` | The main model. Check the name against Google's models list if you get model-not-found errors. |
+| `GEMINI_FALLBACK_MODEL` | Tried when the main model fails or takes more than 2.5 s. Leave it empty to turn the fallback off. |
 
-`.env` is git-ignored. Never commit it, and don't share your secret.
+`.env` is git-ignored. Never commit it, and don't share your secret or your key.
+
+**Gemini free tier.** A free key allows about 5 requests a minute and 20 a day per model (Nov 2026). The fallback model has its own allowance, but a slow answer uses quota on both models. Once the allowance is used up, every suggestion fails with "The AI suggestion service isn't available right now" until it resets (daily at midnight Pacific time). Before a demo, don't spend your quota on `npm run test:ai-live`, or use a separate key.
+
+**Testing**
+
+`npm test` runs the automated tests (Node's built-in test runner, so there is nothing extra to install). Tests named `todo` cover known bugs: they show the bug without failing the run, and start passing once the bug is fixed. Each test name starts with an ID (`AI-`, `GEM-`, `CLI-`) that the Testing Log refers to.
+
+`npm run test:ai-live` signs in as a local test account (`ai-smoke@hiips360.test`, created on the first run) and checks real Gemini answers against the reference scenario. It waits 13 s between requests to stay under the free-tier limit; set `AI_SMOKE_DELAY_MS=0` to turn the wait off. Pass a folder to also send your own photos: `npm run test:ai-live -- path/to/photos`.
+
+**Trying it on a phone**
+
+1. Put the phone and the laptop on the same Wi-Fi. Campus Wi-Fi usually stops devices from reaching each other; if the phone can't load the page, turn on the phone's hotspot and connect the laptop to it.
+2. On Windows, set that network to **Private** (Settings > Network & internet > your connection > Network profile type). If Windows Firewall asks about Node.js, allow it on private networks.
+3. Run `npm run dev:phone` and open the `Network:` address that Vite prints (for example `http://192.168.1.68:5173`) on the phone. Only port 5173 needs to be reachable; Vite passes `/api` on to the API.
+4. Sign in and use the app. The camera works through the photo box on Add hazard. Installing to the home screen and offline use need HTTPS, so test those with a deployed build instead.
 
 **Common problems**
 
@@ -324,6 +351,9 @@ There is no `npm run seed` or test runner yet.
 | `http proxy error ... ECONNREFUSED` in Vite, or a 502 | The API isn't running, or was still connecting. Use `npm run dev:all`. |
 | `Could not connect to MongoDB` | Check `Get-Service MongoDB`; start it from an admin PowerShell. |
 | Still signed in after stopping the API | Intended. The device remembers the last signed-in user for offline use. |
+| `EADDRINUSE` on port 3001 or 5173 | An old server is still running, sometimes with no terminal open. Find it with `Get-NetTCPConnection -LocalPort 3001 -State Listen` and stop it with `Stop-Process -Id <OwningProcess>`. |
+| Every hazard suggestion says the service isn't available | Look at the API terminal. A `429 RESOURCE_EXHAUSTED` means the Gemini free-tier allowance is used up (see above); a `503` means Gemini is busy, so try again shortly. |
+| The phone can't open the page | Check that both devices are on the same network, that the network is Private, and that you used `npm run dev:phone`. See **Trying it on a phone** above. |
 
 **Demo scenario (once the inspection flow is built):** Start a new inspection, choose (or photograph) a residential framing site, accept the suggested sheet, open the ladder hazard, attach a photo, mark confined space not applicable, then open the summary.
 

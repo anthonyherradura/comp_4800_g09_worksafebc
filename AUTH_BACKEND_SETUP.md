@@ -120,7 +120,7 @@ You should see the account you just made. Each document also has a `passwordHash
 | `Could not connect to MongoDB ... Is the MongoDB service running?` | Run `Get-Service MongoDB`. If it's stopped, see step 2. |
 | `Access is denied` when starting the service | You're not in an administrator PowerShell. See step 2. |
 | `[vite] http proxy error ... ECONNREFUSED`, or "Can't reach the HIIPS360 server" on sign-in | The API isn't running. Use `npm run dev:all`, not `npm run dev`. If you only see this in the first second after starting, the API was still connecting and you can ignore it. |
-| `EADDRINUSE :3001` or `:5173` | An old dev server is still running. Close the other terminal, or change `PORT` in `.env`. |
+| `EADDRINUSE :3001` or `:5173` | An old dev server is still running. Close the other terminal. If there isn't one, find the process with `Get-NetTCPConnection -LocalPort 3001 -State Listen` and stop it with `Stop-Process -Id <OwningProcess>`. Or change `PORT` in `.env`. |
 | You're still signed in after the API was stopped | This is intentional. The app remembers the last signed-in user on the device so officers stay signed in with no signal. |
 
 ## Resetting your local data
