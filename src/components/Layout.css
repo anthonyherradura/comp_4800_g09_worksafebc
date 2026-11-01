@@ -1,5 +1,5 @@
 .app-shell {
-    min-height: 100dvh;
+    min-height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -8,101 +8,129 @@
 
 .phone {
     width: 100%;
+    height: 100vh;
     height: 100dvh;
+    /* tracks the real visible height on phones */
     display: flex;
     flex-direction: column;
-    background: var(--wsbc-white);
+    --header-bg: var(--wsbc-orange);
+    --nav-bg: var(--wsbc-iron-grey);
+    /* the nav icons' cut-outs read this too */
+    --footer-accent: var(--wsbc-mountain-blue);
+    background: linear-gradient(to bottom, var(--header-bg) 50%, var(--footer-accent) 50%);
 }
 
-
+/* ---------- Header: orange, logo left, icon-only sign out ---------- */
 .header {
-    background: var(--wsbc-orange);
-    height: 65px;
+    flex-shrink: 0;
+    min-height: calc(52px + env(safe-area-inset-top, 0px));
     display: flex;
     align-items: center;
     justify-content: space-between;
-    flex-shrink: 0;
-    padding: 0 16px;
+    padding: env(safe-area-inset-top, 0px) 16px 0 20px;
+    background: var(--header-bg);
 }
 
-/* Not .logo: wsbc.css sets .logo { width: 90% }, which squeezes the sign-out button */
-.app-logo {
+.logo {
     margin: 0;
-    font-size: 2.75rem;
+    font-size: 1.875rem;
+    line-height: 1.1;
     font-weight: 500;
     letter-spacing: -1px;
     color: var(--wsbc-white);
 }
 
-.app-logo span {
+.logo span {
     color: var(--wsbc-black);
 }
 
-/* Area where each page is rendered */
+.signout-btn {
+    min-width: 44px;
+    height: 44px;
+    padding: 0 8px;
+    white-space: nowrap;
+    border: none;
+    background: none;
+    color: var(--wsbc-black);
+    cursor: pointer;
+}
+
+.signout-btn svg {
+    display: block;
+    width: 26px;
+    height: 26px;
+}
+
+.signout-btn:focus-visible {
+    outline: 3px solid var(--wsbc-black);
+    outline-offset: 2px;
+    border-radius: 6px;
+}
+
+/* Area where each page is rendered: top-left and bottom-right corners are curved */
 .page {
     flex: 1;
+    background: var(--wsbc-white);
+    border-radius: 28px 0 28px 0;
+    margin-bottom: 16px;
+    /* the blue band above the footer */
     display: flex;
     flex-direction: column;
     min-height: 0;
 }
 
+/* ---------- Footer nav: iron grey, labels, orange current item ---------- */
 .nav {
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-    height: 70px;
-    background: var(--wsbc-orange);
     flex-shrink: 0;
+    display: flex;
+    background: var(--nav-bg);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 .nav-btn {
-    width: 44px;
-    height: 44px;
-    padding: 5px;
-    color: var(--wsbc-black);
-    opacity: 0.55;
-}
-
-
-.nav-btn.active {
-    opacity: 1;
-}
-
-.nav-btn svg {
-    width: 100%;
-    height: 100%;
-}
-
-.nav-btn:focus-visible {
-    outline: 3px solid var(--wsbc-black);
-    outline-offset: 2px;
-    border-radius: 6px;
-    opacity: 1;
-}
-.signout-btn {
-    min-height: 44px;
-    padding: 0 8px;
-    border: none;
-    background: none;
-    color: var(--wsbc-black);
-    font: inherit;
-    font-weight: 700;
-    text-decoration: underline;
-    cursor: pointer;
-}
-
-.signout-btn:focus-visible,
-.logo-link:focus-visible {
-    outline: 3px solid var(--wsbc-black);
-    outline-offset: 2px;
-    border-radius: 6px;
-}
-
-.logo-link {
+    position: relative;
+    flex: 1;
+    min-height: 68px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 8px 4px;
+    color: var(--wsbc-steel-grey);
+    font-size: 0.6875rem;
+    /* 11px */
+    font-weight: 500;
     text-decoration: none;
 }
 
-/* Public pages can be longer than the screen */
-.page-scroll {
-    overflow-y: auto;
+.nav-btn svg {
+    width: 30px;
+    height: 30px;
+}
+
+/* Current page: orange icon + bar, white label (white text passes contrast on iron grey) */
+.nav-btn.active {
+    color: var(--wsbc-white);
+}
+
+.nav-btn.active svg {
+    color: var(--wsbc-orange);
+}
+
+.nav-btn.active::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 28px;
+    height: 3px;
+    transform: translateX(-50%);
+    border-radius: 0 0 3px 3px;
+    background: var(--wsbc-orange);
+}
+
+.nav-btn:focus-visible {
+    outline: 3px solid var(--wsbc-white);
+    outline-offset: -3px;
 }
