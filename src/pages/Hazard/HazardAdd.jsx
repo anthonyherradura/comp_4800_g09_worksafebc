@@ -5,7 +5,20 @@ import { CameraPlusIcon, MicIcon, CloseIcon } from "./HazardIcons";
 import { suggestHazard } from "./suggestHazard";
 import "./Hazard.css";
 
-// Page 2: add a photo and/or a prompt, ask the AI for a suggested hazard, then Accept
+const SendIcon = () => (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path
+            d="M4 12 20 4l-4 16-4.5-6.5L4 12ZM11.5 13.5 20 4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        />
+    </svg>
+);
+
+// Page 2: add a photo, a description, or both, ask the AI for a suggested hazard, then Accept
 export default function HazardAdd() {
     const { addHazard } = useHazards();
     const navigate = useNavigate();
@@ -72,35 +85,51 @@ export default function HazardAdd() {
     };
 
     return (
-        <div className="hz-page">
-            <div className="hz-outer">
-                <form className="hz-card hz-card--scroll" onSubmit={handleAccept}>
-                    <div className="hz-title-row">
-                        <h2 className="hz-title">Hazard guidance</h2>
-                        <button type="button" className="hz-close" aria-label="Close" onClick={handleClose}>
-                            <CloseIcon />
-                        </button>
-                    </div>
+        <form className="ha-page" onSubmit={handleAccept}>
+            <div className="ha-top">
+                <h2 className="ha-title">Add hazard</h2>
+                <button type="button" className="ha-close" aria-label="Close" onClick={handleClose}>
+                    <CloseIcon />
+                </button>
+            </div>
 
-                    <div className="hz-frame">
-                        <label className="hz-photo hz-photo--tall">
-                            {photo ? <img src={photo} alt="Selected hazard" /> : <CameraPlusIcon />}
-                            <input
-                                className="hz-visually-hidden"
-                                type="file"
-                                accept="image/jpeg,image/png,image/webp"
-                                aria-label="Add a photo"
-                                disabled={suggesting}
-                                onChange={handlePhoto}
-                            />
-                        </label>
-                    </div>
-
-                    <div className="hz-prompt">
+            <div className="ha-panel">
+                <section className="ha-card" aria-labelledby="ha-photo-label">
+                    <h3 className="ha-label" id="ha-photo-label">
+                        Add a photo
+                    </h3>
+                    <label className="ha-drop">
+                        {photo ? (
+                            <>
+                                <img src={photo} alt="Selected hazard" />
+                                <span className="ha-change">Change</span>
+                            </>
+                        ) : (
+                            <>
+                                <CameraPlusIcon />
+                                <span>Take or upload a photo</span>
+                            </>
+                        )}
                         <input
-                            className="hz-input"
+                            className="hz-visually-hidden"
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp"
+                            aria-label="Add a photo"
+                            disabled={suggesting}
+                            onChange={handlePhoto}
+                        />
+                    </label>
+                </section>
+
+                <section className="ha-card" aria-labelledby="ha-describe-label">
+                    <h3 className="ha-label" id="ha-describe-label">
+                        Describe it
+                    </h3>
+                    <div className="ha-prompt">
+                        <input
+                            className="ha-input"
                             type="text"
-                            placeholder="Enter your prompt"
+                            placeholder="Describe the hazard"
                             aria-label="Describe the hazard"
                             maxLength={500}
                             value={prompt}
@@ -113,39 +142,46 @@ export default function HazardAdd() {
                                 }
                             }}
                         />
-                        <button type="button" className="hz-mic" aria-label="Voice input">
+                        <button type="button" className="ha-mic" aria-label="Voice input">
                             <MicIcon />
                         </button>
                     </div>
-
-                    <button type="button" className="btn btn-orange hz-send" disabled={!canSend} onClick={handleSend}>
+                    <button type="button" className="btn btn-orange ha-send" disabled={!canSend} onClick={handleSend}>
+                        <SendIcon />
                         {suggesting ? "Thinking…" : "Send"}
                     </button>
+                </section>
 
-                    <div className="hz-suggest" aria-live="polite">
+                <section className="ha-card" aria-labelledby="ha-suggest-label">
+                    <h3 className="ha-label" id="ha-suggest-label">
+                        Suggested hazard
+                    </h3>
+                    <div className="ha-result" aria-live="polite">
                         {suggestion ? (
                             <strong>{suggestion}</strong>
                         ) : (
-                            <span className="hz-suggest-placeholder">{suggesting ? "Thinking…" : "Suggested hazard"}</span>
+                            <span className="ha-result-empty">
+                                {suggesting ? "Thinking…" : "Your suggestion will appear here."}
+                            </span>
                         )}
                     </div>
-
-                    {error && (
-                        <p role="alert" className="hz-error">
-                            {error}
-                        </p>
-                    )}
-
-                    <div className="hz-actions">
-                        <button type="submit" className="btn btn-orange" disabled={!suggestion || suggesting}>
-                            Accept
-                        </button>
-                        <button type="button" className="btn hz-clear" onClick={handleClear} disabled={suggesting}>
-                            Clear
-                        </button>
-                    </div>
-                </form>
+                </section>
             </div>
-        </div>
+
+            {error && (
+                <p role="alert" className="hz-error">
+                    {error}
+                </p>
+            )}
+
+            <div className="ha-actions">
+                <button type="submit" className="btn btn-orange" disabled={!suggestion || suggesting}>
+                    Accept
+                </button>
+                <button type="button" className="btn ha-clear" onClick={handleClear} disabled={suggesting}>
+                    Clear
+                </button>
+            </div>
+        </form>
     );
 }

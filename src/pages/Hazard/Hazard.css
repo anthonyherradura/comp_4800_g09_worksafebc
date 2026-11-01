@@ -381,7 +381,6 @@
     background: var(--wsbc-ash-grey);
     color: var(--wsbc-bodycopy);
     text-align: left;
-    overflow-wrap: anywhere; /* long URLs in the development-only error detail */
 }
 
 .hz-status {
@@ -394,4 +393,565 @@
 .hz-send {
     width: 100%;
     text-transform: uppercase;
+}
+
+/* ---------- Page 1: hazard list (WorkSafeBC card style) ---------- */
+.hl-page {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 20px 22px;
+}
+
+.hl-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.hl-title {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--wsbc-orange);
+}
+
+.hl-count {
+    min-width: 28px;
+    padding: 2px 10px;
+    border-radius: 12px;
+    background: var(--wsbc-silver-grey);
+    color: var(--wsbc-bodycopy);
+    font-size: 0.875rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+.hl-add {
+    width: 100%;
+    min-height: 44px;
+    gap: 6px;
+    border-radius: 10px;
+    text-decoration: none;
+    text-transform: uppercase;
+}
+
+.hl-add svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* Soft grey panel that scrolls; the title and Add button stay put */
+.hl-panel {
+    flex: 1;
+    min-height: 0;
+    margin: 0;
+    padding: 8px;
+    list-style: none;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border-radius: 14px;
+    background: var(--wsbc-ash-grey);
+}
+
+/* Each hazard is one white rounded card, and the whole card is the link */
+.hl-card {
+    display: block;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: var(--wsbc-white);
+    color: var(--wsbc-bodycopy);
+    text-decoration: none;
+}
+
+.hl-name {
+    display: block;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.hl-meta {
+    display: block;
+    margin-top: 2px;
+    font-size: 0.875rem;
+    color: var(--wsbc-warm-grey);
+}
+
+.hl-divider {
+    display: block;
+    margin: 10px 0 8px;
+    border-top: 1px dotted var(--wsbc-smoke-grey);
+}
+
+.hl-view {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--wsbc-mountain-blue);
+}
+
+.hl-arrow {
+    width: 0;
+    height: 0;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    border-left: 7px solid var(--wsbc-mountain-blue);
+}
+
+.hl-empty {
+    padding: 24px 16px;
+    border-radius: 12px;
+    background: var(--wsbc-white);
+    color: var(--wsbc-iron-grey);
+    text-align: center;
+}
+
+.hl-card:focus-visible,
+.hl-add:focus-visible {
+    outline: 3px solid var(--wsbc-black);
+    outline-offset: 2px;
+}
+
+/* ---------- Page 2: add hazard (WorkSafeBC card style) ---------- */
+.ha-page {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 20px 22px;
+    overflow-y: auto;
+}
+
+.ha-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.ha-title {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--wsbc-orange);
+}
+
+.ha-close {
+    width: 44px;
+    height: 44px;
+    /* negative margins keep the 44px tap target from making the title row taller than the list page's */
+    margin: -8px -10px -8px 0;
+    padding: 10px;
+    border: none;
+    background: none;
+    color: var(--wsbc-bodycopy);
+    cursor: pointer;
+}
+
+.ha-close svg,
+.ha-mic svg {
+    width: 100%;
+    height: 100%;
+}
+
+.ha-hint {
+    margin: -4px 0 0;
+    font-size: 0.875rem;
+    color: var(--wsbc-warm-grey);
+}
+
+/* Soft grey panel holding one white card per step */
+.ha-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px;
+    border-radius: 14px;
+    background: var(--wsbc-ash-grey);
+}
+
+.ha-card {
+    padding: 12px 14px 14px;
+    border-radius: 12px;
+    background: var(--wsbc-white);
+}
+
+.ha-label {
+    margin: 0 0 8px;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--wsbc-bodycopy);
+}
+
+/* Photo drop zone */
+.ha-drop {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    height: 110px;
+    overflow: hidden;
+    border: 2px dashed var(--wsbc-smoke-grey);
+    border-radius: 10px;
+    background: var(--wsbc-ash-grey);
+    color: var(--wsbc-warm-grey);
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+
+.ha-drop svg {
+    width: 36px;
+    height: 36px;
+    color: var(--wsbc-orange);
+}
+
+.ha-drop img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.ha-change {
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    padding: 3px 12px;
+    border-radius: 12px;
+    background: var(--wsbc-white);
+    color: var(--wsbc-bodycopy);
+    font-size: 0.8125rem;
+    font-weight: 700;
+}
+
+.ha-drop:focus-within {
+    outline: 3px solid var(--wsbc-black);
+    outline-offset: 2px;
+}
+
+/* Prompt */
+.ha-prompt {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.ha-input {
+    flex: 1;
+    min-width: 0;
+    height: 44px;
+    padding: 0 12px;
+    border: 1px solid var(--wsbc-steel-grey);
+    border-radius: 10px;
+    background: var(--wsbc-white);
+    color: var(--wsbc-bodycopy);
+    font: inherit;
+}
+
+.ha-input::placeholder {
+    color: var(--wsbc-warm-grey);
+}
+
+.ha-mic {
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    padding: 11px;
+    border: none;
+    border-radius: 50%;
+    background: var(--wsbc-silver-grey);
+    color: var(--wsbc-bodycopy);
+    cursor: pointer;
+}
+
+.ha-send {
+    width: 100%;
+    min-height: 44px;
+    gap: 6px;
+    border-radius: 10px;
+    text-transform: uppercase;
+}
+
+.ha-send svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* Suggestion */
+.ha-result {
+    min-height: 28px;
+    font-size: 1.0625rem;
+    overflow-wrap: anywhere;
+}
+
+.ha-result-empty {
+    font-size: 0.9375rem;
+    color: var(--wsbc-warm-grey);
+}
+
+/* Accept / Clear */
+.ha-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: auto;
+}
+
+.ha-actions .btn {
+    flex: 1;
+    min-height: 44px;
+    border-radius: 10px;
+    text-transform: uppercase;
+}
+
+.ha-clear {
+    background: var(--wsbc-silver-grey);
+    border-color: var(--wsbc-silver-grey);
+    color: var(--wsbc-bodycopy);
+}
+
+.ha-close:focus-visible,
+.ha-mic:focus-visible,
+.ha-input:focus-visible,
+.ha-send:focus-visible {
+    outline: 3px solid var(--wsbc-black);
+    outline-offset: 2px;
+}
+
+/* ---------- Page 3: hazard details (WorkSafeBC card style) ---------- */
+.hd-page {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 20px 22px;
+    overflow-y: auto;
+}
+
+.hd-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.hd-title {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--wsbc-orange);
+}
+
+/* 44px tap target without making the title row taller than the other pages' */
+.hd-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 44px;
+    margin: -8px -8px -8px 0;
+    padding: 0 8px;
+    color: var(--wsbc-bodycopy);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.hd-back svg {
+    width: 16px;
+    height: 16px;
+}
+
+.hd-panel {
+    padding: 8px;
+    border-radius: 14px;
+    background: var(--wsbc-ash-grey);
+}
+
+.hd-summary {
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: var(--wsbc-white);
+}
+
+.hd-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.hd-name {
+    min-width: 0;
+    font-size: 1.0625rem;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.hd-status {
+    flex-shrink: 0;
+    padding: 2px 10px;
+    border-radius: 12px;
+    background: var(--wsbc-pale-moss-green);
+    color: var(--wsbc-bodycopy);
+    font-size: 0.8125rem;
+    font-weight: 700;
+}
+
+/* Small, wide tiles */
+.hd-tiles {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.hd-tile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
+    padding: 0 6px;
+    border-radius: 8px;
+    background: var(--wsbc-ash-grey);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.hd-tile--blank {
+    background: var(--wsbc-white);
+    border: 1.5px dashed var(--wsbc-steel-grey);
+}
+
+/* Comment / Photos switch */
+.hd-tabs {
+    display: flex;
+    padding: 3px;
+    border-radius: 12px;
+    background: var(--wsbc-silver-grey);
+}
+
+.hd-tab {
+    flex: 1;
+    min-height: 40px;
+    border: none;
+    border-radius: 9px;
+    background: none;
+    color: var(--wsbc-iron-grey);
+    font: inherit;
+    cursor: pointer;
+}
+
+.hd-tab[aria-selected="true"] {
+    background: var(--wsbc-white);
+    color: var(--wsbc-bodycopy);
+    font-weight: 700;
+}
+
+.hd-textarea {
+    width: 100%;
+    min-height: 140px;
+    padding: 10px 12px;
+    border: 1px solid var(--wsbc-steel-grey);
+    border-radius: 10px;
+    resize: vertical;
+    background: var(--wsbc-white);
+    color: var(--wsbc-bodycopy);
+    font: inherit;
+}
+
+.hd-photos {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.hd-add {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 44px;
+    border: 2px solid var(--wsbc-orange);
+    border-radius: 10px;
+    color: var(--wsbc-bodycopy);
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.hd-add svg {
+    width: 18px;
+    height: 18px;
+    color: var(--wsbc-orange);
+}
+
+.hd-gallery {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+.hd-gallery img {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.hd-gallery-empty {
+    margin: 0;
+    padding: 20px 0;
+    text-align: center;
+    color: var(--wsbc-warm-grey);
+}
+
+/* Not applicable / Delete */
+.hd-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: auto;
+}
+
+.hd-actions .btn {
+    flex: 1;
+    min-height: 44px;
+    border-radius: 10px;
+}
+
+.hd-na {
+    background: var(--wsbc-silver-grey);
+    border-color: var(--wsbc-silver-grey);
+    color: var(--wsbc-bodycopy);
+}
+
+.hd-na[aria-pressed="true"] {
+    background: var(--wsbc-iron-grey);
+    border-color: var(--wsbc-iron-grey);
+    color: var(--wsbc-white);
+}
+
+.hd-delete {
+    background: var(--wsbc-white);
+    border-color: var(--wsbc-huckleberry-red);
+    color: var(--wsbc-huckleberry-red);
+    text-transform: uppercase;
+}
+
+.hd-add:focus-within,
+.hd-back:focus-visible,
+.hd-tab:focus-visible,
+.hd-textarea:focus-visible,
+.hd-na:focus-visible,
+.hd-delete:focus-visible {
+    outline: 3px solid var(--wsbc-black);
+    outline-offset: 2px;
 }
