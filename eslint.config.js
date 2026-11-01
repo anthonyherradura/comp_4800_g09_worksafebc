@@ -19,8 +19,8 @@ export default defineConfig([
     },
   },
   {
-    // The API runs in Node, not the browser
-    files: ['server/**/*.js'],
+    // The API and its tests run in Node, not the browser
+    files: ['server/**/*.js', 'tests/**/*.js'],
     extends: [js.configs.recommended],
     languageOptions: {
       globals: globals.node,

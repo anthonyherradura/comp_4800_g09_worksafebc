@@ -7,9 +7,12 @@
     "dev": "vite",
     "dev:api": "node --watch --env-file=.env server/index.js",
     "dev:all": "concurrently -n api,web -c blue,yellow \"npm:dev:api\" \"npm:dev\"",
+    "dev:phone": "concurrently -n api,web -c blue,yellow \"npm:dev:api\" \"npm:dev -- --host\"",
     "api": "node --env-file=.env server/index.js",
     "build": "vite build",
     "lint": "eslint .",
+    "test": "node --test --experimental-test-module-mocks \"tests/*.test.js\"",
+    "test:ai-live": "node --env-file=.env scripts/ai-smoke.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
