@@ -7,44 +7,214 @@
     min-height: 0;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
     padding: 20px 22px;
     overflow-y: auto;
     color: var(--wsbc-bodycopy);
 }
 
-/* The orange colour and heading font come from the h2 rule in tokens.css */
+/* One font for the whole page: the body font from tokens.css.
+   Without this, the h1/h2 rules there put the heading font on titles and group names,
+   and form controls fall back to the browser's own font. */
+.planning-page,
+.planning-page h1,
+.planning-page h2,
+.planning-page p,
+.planning-page label,
+.planning-page button,
+.planning-page textarea {
+    font-family: var(--font-body);
+    letter-spacing: normal;
+}
+
 .planning-title {
     margin: 0;
     font-size: 1.75rem;
     line-height: 1.2;
     font-weight: 700;
+    color: var(--wsbc-bodycopy);
 }
 
-/* Soft grey panel holding white cards */
-.planning-panel {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+/* ---------- Progress ---------- */
+.planning-progress-text {
+    margin: 0 0 6px;
+    font-size: 0.8125rem;
+    font-weight: 700;
+}
+
+.planning-bar {
+    height: 8px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--wsbc-silver-grey);
+}
+
+.planning-bar-fill {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: var(--wsbc-moss-green);
+    transition: width 200ms ease-out;
+}
+
+/* ---------- Group cards (accordion) ---------- */
+/* White rounded card with a thin outline */
+.planning-card {
     margin: 0;
-    padding: 8px;
+    border: 1px solid var(--wsbc-silver-grey);
+    border-radius: 12px;
+    background: var(--wsbc-white);
+}
+
+.planning-empty {
+    padding: 12px 14px;
+    font-size: 0.9375rem;
+}
+
+.planning-group-heading {
+    margin: 0;
+    font-size: inherit;
+    color: inherit;
+}
+
+.planning-group-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 52px;
+    padding: 8px 14px;
+    border: none;
+    border-radius: 12px;
+    background: none;
+    color: var(--wsbc-bodycopy);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.planning-group-name {
+    flex: 1;
+    min-width: 0;
+    font-size: 1.0625rem;
+    font-weight: 700;
+}
+
+.planning-group-count {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--wsbc-warm-grey);
+}
+
+.planning-chevron {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+.planning-chevron svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* The open group shows a count only, as in the design; the arrow is for closed groups */
+.planning-group.is-open .planning-chevron {
+    display: none;
+}
+
+/* ---------- Items ---------- */
+.planning-items {
+    margin: 0;
+    padding: 0 14px 6px;
     list-style: none;
-    border-radius: 14px;
+}
+
+.planning-item {
+    padding: 12px 0 14px;
+}
+
+/* Dotted divider between items */
+.planning-item+.planning-item {
+    border-top: 2px dotted var(--wsbc-steel-grey);
+}
+
+.planning-item-name {
+    margin: 0 0 10px;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+}
+
+/* Three-way switch: the grey track holds To review, Ready and Not applicable */
+.planning-segments {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    border-radius: 10px;
     background: var(--wsbc-ash-grey);
 }
 
-/* White rounded card */
-.planning-card {
-    padding: 12px 14px;
-    border-radius: 12px;
-    background: var(--wsbc-white);
+.planning-segment {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 6px;
+    border: 2px solid transparent;
+    border-radius: 8px;
+    background: none;
+    color: var(--wsbc-warm-grey);
+    font: inherit;
+    font-size: 0.8125rem;
+    line-height: 1.2;
+    text-align: center;
+    cursor: pointer;
+}
+
+.planning-segment.is-selected {
+    color: var(--wsbc-black);
+    font-weight: 700;
+}
+
+.planning-segment--pending.is-selected {
+    border-color: var(--wsbc-orange);
+    background: var(--wsbc-pale-sunrise-yellow);
+}
+
+.planning-segment--ready.is-selected {
+    border-color: var(--wsbc-moss-green);
+    background: var(--wsbc-pale-moss-green);
+}
+
+.planning-segment--not-applicable.is-selected {
+    border-color: var(--wsbc-iron-grey);
+    background: var(--wsbc-silver-grey);
+}
+
+.planning-segment:not(.is-selected):hover {
+    background: var(--wsbc-silver-grey);
+}
+
+.planning-segment-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+.planning-segment-icon svg {
+    display: block;
+    width: 100%;
+    height: 100%;
 }
 
 /* ---------- Visit notes ---------- */
 .planning-label {
     display: block;
-    margin-bottom: 8px;
-    font-size: 0.875rem;
+    margin-bottom: 6px;
+    font-size: 0.8125rem;
     font-weight: 700;
 }
 
@@ -54,192 +224,36 @@
     min-height: 84px;
     padding: 10px 12px;
     border: 1px solid var(--wsbc-steel-grey);
-    border-radius: 10px;
+    border-radius: 6px;
     resize: vertical;
     background: var(--wsbc-white);
     color: var(--wsbc-bodycopy);
     font: inherit;
+    font-family: var(--font-body);
+    text-align: left;
 }
 
 .planning-textarea::placeholder {
     color: var(--wsbc-warm-grey);
 }
 
-/* Overrides the default h3 size */
-.planning-subtitle {
-    margin: 4px 0 -4px 2px;
-    font-size: 0.9375rem;
-    font-weight: 700;
-    color: var(--wsbc-bodycopy);
-}
-
-/* ---------- Checklist ---------- */
-/* One group of items from the sheet: Before you go, On arrival, Walking the site */
-.planning-group {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.planning-empty {
-    margin: 0;
-    font-size: 0.9375rem;
-}
-
-.planning-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-/* The round status button; tapping it opens the menu */
-.planning-status-wrap {
-    position: relative;
-    flex-shrink: 0;
-}
-
-.planning-status {
-    display: grid;
-    place-items: center;
-    width: 44px;
-    height: 44px;
-    padding: 0;
-    border: 2px solid var(--wsbc-steel-grey);
-    border-radius: 50%;
-    background: var(--wsbc-white);
-    color: var(--wsbc-white);
-    font: inherit;
-    font-size: 1.4rem;
-    font-weight: 700;
-    line-height: 1;
-    cursor: pointer;
-}
-
-/* Status colours, shared by the button and the small circles in the menu */
-.planning-status--ready {
-    border-color: var(--wsbc-moss-green);
-    background: var(--wsbc-moss-green);
-}
-
-.planning-status--not-applicable {
-    border-color: var(--wsbc-iron-grey);
-    background: var(--wsbc-iron-grey);
-}
-
-/* ---------- Status menu ---------- */
-.planning-menu {
-    position: absolute;
-    top: calc(100% + 6px);
-    left: 0;
-    z-index: 5;
-    width: min(240px, 70vw);
-    padding: 4px;
-    border: 1px solid var(--wsbc-steel-grey);
-    border-radius: 12px;
-    background: var(--wsbc-white);
-}
-
-.planning-menu--up {
-    top: auto;
-    bottom: calc(100% + 6px);
-}
-
-.planning-option {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    width: 100%;
-    min-height: 44px;
-    padding: 0 10px;
-    border: none;
-    border-radius: 8px;
-    background: none;
-    color: var(--wsbc-bodycopy);
-    font: inherit;
-    text-align: left;
-    cursor: pointer;
-}
-
-.planning-option:hover,
-.planning-option--selected {
-    background: var(--wsbc-ash-grey);
-}
-
-.planning-option--selected {
-    font-weight: 700;
-}
-
-.planning-dot {
-    display: grid;
-    place-items: center;
-    width: 28px;
-    height: 28px;
-    flex-shrink: 0;
-    border: 2px solid var(--wsbc-steel-grey);
-    border-radius: 50%;
-    background: var(--wsbc-white);
-    color: var(--wsbc-white);
-    font-size: 1rem;
-    font-weight: 700;
-    line-height: 1;
-}
-
-.planning-check {
-    margin-left: auto;
-    font-weight: 700;
-}
-
-.planning-item-text {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-    overflow-wrap: anywhere;
-}
-
-.planning-item-name {
-    font-weight: 700;
-}
-
-.planning-pill {
-    padding: 1px 10px;
-    border-radius: 999px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    line-height: 1.5;
-    color: var(--wsbc-bodycopy);
-}
-
-.planning-pill--pending {
-    background: var(--wsbc-pale-sunrise-yellow);
-}
-
-.planning-pill--ready {
-    background: var(--wsbc-pale-moss-green);
-}
-
-.planning-pill--not-applicable {
-    background: var(--wsbc-silver-grey);
-}
-
 .planning-demo {
-    margin: 0 0 0 2px;
+    margin: 6px 0 0 2px;
     font-size: 0.75rem;
     line-height: 1.5;
     color: var(--wsbc-warm-grey);
 }
 
-/* ---------- Focus ---------- */
-.planning-status:focus-visible,
+/* ---------- Focus and motion ---------- */
+.planning-group-toggle:focus-visible,
+.planning-segment:focus-visible,
 .planning-textarea:focus-visible {
     outline: 3px solid var(--wsbc-black);
     outline-offset: 2px;
 }
 
-/* Inside the menu, so the outline isn't clipped */
-.planning-option:focus-visible {
-    outline: 3px solid var(--wsbc-black);
-    outline-offset: -3px;
+@media (prefers-reduced-motion: reduce) {
+    .planning-bar-fill {
+        transition: none;
+    }
 }

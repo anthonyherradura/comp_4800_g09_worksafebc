@@ -1,98 +1,66 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useJobs } from "../../context/JobContext";
-import { getSheetChecklist } from "../../data/sheets";
+import { SHEET_CATALOG, getSheetChecklist } from "../../data/sheets";
 import "./Planning.css";
 
 const STATUSES = [
-    { value: "pending", label: "To review", symbol: "" },
-    { value: "ready", label: "Ready", symbol: "✓" },
-    { value: "not-applicable", label: "Not applicable", symbol: "×" },
+    { value: "pending", label: "To review" },
+    { value: "ready", label: "Ready" },
+    { value: "not-applicable", label: "Not applicable" },
 ];
 
-// The round status button and the small menu that opens under it
-function StatusPicker({ item, status, open, openUp, onToggle, onSelect, onClose }) {
-    const triggerRef = useRef(null);
-    const menuRef = useRef(null);
+const CheckCircleIcon = () => (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="2.4" />
+        <path d="m8 12.5 2.75 2.75L16.5 9.5" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
 
-    // Move focus into the menu when it opens, onto the current status
-    useEffect(() => {
-        if (!open) return;
-        const options = menuRef.current.querySelectorAll('[role="menuitemradio"]');
-        (menuRef.current.querySelector('[aria-checked="true"]') || options[0]).focus();
-    }, [open]);
+const ChevronIcon = () => (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="m9 5 7 7-7 7" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
 
+// Three buttons in a row; the chosen one is highlighted. Arrow keys move between them.
+function StatusSegments({ item, value, onSelect }) {
     const handleKeyDown = (e) => {
-        const options = Array.from(menuRef.current.querySelectorAll('[role="menuitemradio"]'));
-        const index = options.indexOf(document.activeElement);
-        if (e.key === "ArrowDown") {
-            e.preventDefault();
-            options[(index + 1) % options.length].focus();
-        } else if (e.key === "ArrowUp") {
-            e.preventDefault();
-            options[(index - 1 + options.length) % options.length].focus();
-        } else if (e.key === "Escape") {
-            e.preventDefault();
-            onClose();
-            triggerRef.current.focus();
-        } else if (e.key === "Tab") {
-            onClose();
-        }
-    };
-
-    const choose = (value) => {
-        onSelect(value);
-        onClose();
-        triggerRef.current.focus();
+        const index = STATUSES.findIndex((s) => s.value === value);
+        let next = null;
+        if (e.key === "ArrowRight" || e.key === "ArrowDown") next = (index + 1) % STATUSES.length;
+        if (e.key === "ArrowLeft" || e.key === "ArrowUp") next = (index - 1 + STATUSES.length) % STATUSES.length;
+        if (next === null) return;
+        e.preventDefault();
+        const buttons = e.currentTarget.parentElement.querySelectorAll('[role="radio"]');
+        onSelect(STATUSES[next].value);
+        buttons[next].focus();
     };
 
     return (
-        <div className="planning-status-wrap">
-            <button
-                ref={triggerRef}
-                type="button"
-                className={`planning-status planning-status--${status.value}`}
-                aria-label={`${item.label}: status, ${status.label}`}
-                aria-haspopup="menu"
-                aria-expanded={open}
-                onClick={onToggle}
-            >
-                <span aria-hidden="true">{status.symbol}</span>
-            </button>
-
-            {open && (
-                <div
-                    ref={menuRef}
-                    role="menu"
-                    aria-label={`${item.label}: status`}
-                    className={`planning-menu${openUp ? " planning-menu--up" : ""}`}
-                    onKeyDown={handleKeyDown}
-                >
-                    {STATUSES.map((option) => {
-                        const selected = option.value === status.value;
-                        return (
-                            <button
-                                key={option.value}
-                                type="button"
-                                role="menuitemradio"
-                                aria-checked={selected}
-                                className={`planning-option${selected ? " planning-option--selected" : ""}`}
-                                onClick={() => choose(option.value)}
-                            >
-                                <span className={`planning-dot planning-status--${option.value}`} aria-hidden="true">
-                                    {option.symbol}
-                                </span>
-                                {option.label}
-                                {selected && (
-                                    <span className="planning-check" aria-hidden="true">
-                                        ✓
-                                    </span>
-                                )}
-                            </button>
-                        );
-                    })}
-                </div>
-            )}
+        <div className="planning-segments" role="radiogroup" aria-label={`${item.label}: status`}>
+            {STATUSES.map((option) => {
+                const selected = option.value === value;
+                return (
+                    <button
+                        key={option.value}
+                        type="button"
+                        role="radio"
+                        aria-checked={selected}
+                        tabIndex={selected ? 0 : -1}
+                        className={`planning-segment planning-segment--${option.value}${selected ? " is-selected" : ""}`}
+                        onClick={() => onSelect(option.value)}
+                        onKeyDown={handleKeyDown}
+                    >
+                        {selected && option.value === "ready" && (
+                            <span className="planning-segment-icon">
+                                <CheckCircleIcon />
+                            </span>
+                        )}
+                        {option.label}
+                    </button>
+                );
+            })}
         </div>
     );
 }
@@ -100,110 +68,113 @@ function StatusPicker({ item, status, open, openUp, onToggle, onSelect, onClose 
 export default function PlanningPage() {
     const { currentJob, setChecklistStatus } = useJobs();
     const [notes, setNotes] = useState("");
-    const [openId, setOpenId] = useState(null); // only one menu is open at a time
-    const [openUp, setOpenUp] = useState(false);
+    const [openGroup, setOpenGroup] = useState(null); // null until the person opens one; the first group starts open
 
     // The checklist comes from the job's protocol sheet; its progress is saved on the job
     const items = getSheetChecklist(currentJob?.sheetId);
     const statuses = currentJob?.checklist ?? {};
     const groups = [...new Set(items.map((item) => item.group))];
+    const sheet = SHEET_CATALOG.find((s) => s.sheetId === currentJob?.sheetId);
 
-    // Items low on the screen open their menu upward so it stays visible
-    const toggle = (itemId, e) => {
-        setOpenUp(e.currentTarget.getBoundingClientRect().bottom > window.innerHeight * 0.6);
-        setOpenId(openId === itemId ? null : itemId);
-    };
-
-    // Tapping anywhere outside the open menu closes it
-    useEffect(() => {
-        if (!openId) return;
-        const handlePointerDown = (e) => {
-            if (!e.target.closest(".planning-status-wrap")) setOpenId(null);
-        };
-        document.addEventListener("pointerdown", handlePointerDown);
-        return () => document.removeEventListener("pointerdown", handlePointerDown);
-    }, [openId]);
+    const statusOf = (item) => statuses[item.id] || "pending";
+    const doneCount = items.filter((item) => statusOf(item) !== "pending").length;
+    const percent = items.length ? Math.round((doneCount / items.length) * 100) : 0;
+    const activeGroup = openGroup === null ? groups[0] : openGroup; // "" means all closed
 
     return (
         <div className="planning-page">
-            <h2 id="planning-title" className="planning-title">
-                Planning
-            </h2>
-
-            <div className="planning-panel">
-                <div className="planning-card">
-                    <label className="planning-label" htmlFor="planning-notes">
-                        Visit notes
-                    </label>
-                    <textarea
-                        id="planning-notes"
-                        className="planning-textarea"
-                        value={notes}
-                        onChange={(event) => setNotes(event.target.value)}
-                        placeholder="Add visit notes…"
-                        aria-describedby="planning-demo"
-                    />
-                </div>
-            </div>
+            <h1 className="planning-title">Planning</h1>
 
             {items.length === 0 ? (
-                <>
-                    <h3 className="planning-subtitle">Preparation checklist</h3>
-                    <p className="planning-card planning-empty">
-                        {currentJob?.sheetId ? (
-                            "This protocol sheet has no preparation items."
-                        ) : (
-                            <>
-                                Pick a protocol sheet on <Link to="/home">Home</Link> to load what to check before you
-                                go on site.
-                            </>
-                        )}
-                    </p>
-                </>
+                <p className="planning-card planning-empty">
+                    {currentJob?.sheetId ? (
+                        "This protocol sheet has no preparation items."
+                    ) : (
+                        <>
+                            Pick a protocol sheet on <Link to="/home">Home</Link> to load what to check before you go
+                            on site.
+                        </>
+                    )}
+                </p>
             ) : (
-                groups.map((group) => {
-                    const headingId = `planning-${group.toLowerCase().replace(/\W+/g, "-")}`;
-                    return (
-                        <section key={group} className="planning-group" aria-labelledby={headingId}>
-                            <h3 id={headingId} className="planning-subtitle">
-                                {group}
-                            </h3>
-                            <ul className="planning-panel">
-                                {items
-                                    .filter((item) => item.group === group)
-                                    .map((item) => {
-                                        const status = STATUSES.find(
-                                            (option) => option.value === (statuses[item.id] || "pending")
-                                        );
-                                        return (
-                                            <li key={item.id} className="planning-card planning-item">
-                                                <StatusPicker
+                <>
+                    <div className="planning-progress">
+                        <p className="planning-progress-text">
+                            {sheet ? `${sheet.name} checklist` : "Checklist"} · {doneCount} of {items.length} done
+                        </p>
+                        <div
+                            className="planning-bar"
+                            role="progressbar"
+                            aria-label="Checklist progress"
+                            aria-valuemin={0}
+                            aria-valuemax={items.length}
+                            aria-valuenow={doneCount}
+                        >
+                            <span className="planning-bar-fill" style={{ width: `${percent}%` }} />
+                        </div>
+                    </div>
+
+                    {groups.map((group) => {
+                        const groupItems = items.filter((item) => item.group === group);
+                        const groupDone = groupItems.filter((item) => statusOf(item) !== "pending").length;
+                        const open = activeGroup === group;
+                        const panelId = `planning-${group.toLowerCase().replace(/\W+/g, "-")}`;
+                        return (
+                            <section key={group} className={`planning-card planning-group${open ? " is-open" : ""}`}>
+                                <h2 className="planning-group-heading">
+                                    <button
+                                        type="button"
+                                        className="planning-group-toggle"
+                                        aria-expanded={open}
+                                        aria-controls={panelId}
+                                        onClick={() => setOpenGroup(open ? "" : group)}
+                                    >
+                                        <span className="planning-group-name">{group}</span>
+                                        <span className="planning-group-count">
+                                            {groupDone} of {groupItems.length}
+                                        </span>
+                                        <span className="planning-chevron" aria-hidden="true">
+                                            <ChevronIcon />
+                                        </span>
+                                    </button>
+                                </h2>
+
+                                {open && (
+                                    <ul id={panelId} className="planning-items">
+                                        {groupItems.map((item) => (
+                                            <li key={item.id} className="planning-item">
+                                                <p className="planning-item-name">{item.label}</p>
+                                                <StatusSegments
                                                     item={item}
-                                                    status={status}
-                                                    open={openId === item.id}
-                                                    openUp={openUp}
-                                                    onToggle={(e) => toggle(item.id, e)}
+                                                    value={statusOf(item)}
                                                     onSelect={(value) => setChecklistStatus(currentJob.id, item.id, value)}
-                                                    onClose={() => setOpenId(null)}
                                                 />
-                                                <div className="planning-item-text">
-                                                    <span className="planning-item-name">{item.label}</span>
-                                                    <span className={`planning-pill planning-pill--${status.value}`}>
-                                                        {status.label}
-                                                    </span>
-                                                </div>
                                             </li>
-                                        );
-                                    })}
-                            </ul>
-                        </section>
-                    );
-                })
+                                        ))}
+                                    </ul>
+                                )}
+                            </section>
+                        );
+                    })}
+                </>
             )}
 
-            <p id="planning-demo" className="planning-demo">
-                Visit notes last only while this page is open.
-            </p>
+            <div className="planning-notes">
+                <label className="planning-label" htmlFor="planning-notes">
+                    Visit notes
+                </label>
+                <textarea
+                    id="planning-notes"
+                    className="planning-textarea"
+                    value={notes}
+                    onChange={(event) => setNotes(event.target.value)}
+                    placeholder="Add visit notes…"
+                    aria-describedby="planning-demo"
+                />
+                <p id="planning-demo" className="planning-demo">
+                    Visit notes last only while this page is open.
+                </p>
+            </div>
         </div>
     );
 }
