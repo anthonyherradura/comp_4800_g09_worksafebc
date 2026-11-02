@@ -1,4 +1,9 @@
-/* Not .content: wsbc.css uses that name for its tab panels (absolute, grey border) */
+/* Home page – WorkSafeBC card style, matching the Hazard and Summary pages.
+   Typography, colours and the --wsbc-* variables come from styles/tokens.css.
+   This file only holds what is unique to the home page. */
+
+/* Shared page frame. The Summary page uses this too, so keep it unchanged.
+   Not .content: wsbc.css uses that name for its tab panels (absolute, grey border) */
 .page-content {
     flex: 1;
     display: flex;
@@ -10,116 +15,171 @@
     color: var(--wsbc-bodycopy);
 }
 
+/* Same size and colour as the other page titles */
 .home-title {
     margin: 0;
     font-size: 1.75rem;
     line-height: 1.2;
+    font-weight: 700;
+    color: var(--wsbc-orange);
 }
 
-.search {
+/* Soft grey panel holding white cards */
+.home-panel {
     display: flex;
     flex-direction: column;
     gap: 8px;
+    margin: 0;
+    padding: 8px;
+    list-style: none;
+    border-radius: 14px;
+    background: var(--wsbc-ash-grey);
 }
 
-.search-label {
-    font-size: 1rem;
-    color: var(--wsbc-black);
+/* White rounded card */
+.home-box,
+.home-card {
+    border-radius: 12px;
+    background: var(--wsbc-white);
 }
 
-.add-input {
-    width: 100%;
-    box-sizing: border-box;
+/* ---------- Prompt: text box with mic and send on the side ---------- */
+.home-box {
+    margin: 0;
+    padding: 12px 14px;
+}
+
+.home-search-label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--wsbc-bodycopy);
+}
+
+.home-prompt {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.home-input {
+    flex: 1;
     min-width: 0;
-    height: 57px;
-    border: 1px solid var(--wsbc-smoke-grey);
-    border-radius: 0;
-    background: var(--wsbc-steel-grey);
+    height: 44px;
+    padding: 0 12px;
+    border: 1px solid var(--wsbc-steel-grey);
+    border-radius: 10px;
+    background: var(--wsbc-white);
     color: var(--wsbc-bodycopy);
-    padding: 0 14px;
     font: inherit;
-    font-size: 1.125rem;
+    appearance: none;
 }
 
-.add-input::placeholder {
-    color: var(--wsbc-black);
-    opacity: 0.8;
+.home-input::placeholder {
+    color: var(--wsbc-warm-grey);
 }
 
-.cards {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+.home-mic,
+.home-send {
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    padding: 11px;
+    border: none;
+    cursor: pointer;
 }
 
-.card {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    padding: 14px 16px;
-    background: var(--wsbc-steel-grey);
-    border: 1px solid var(--wsbc-smoke-grey);
+.home-mic svg,
+.home-send svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.home-mic {
+    border-radius: 50%;
+    background: var(--wsbc-silver-grey);
     color: var(--wsbc-bodycopy);
-    text-decoration: none;
 }
 
-a.card:hover {
-    border-color: var(--wsbc-orange);
+.home-send {
+    border-radius: 10px;
+    background: var(--wsbc-orange);
+    color: var(--wsbc-white);
 }
 
-.card-title {
-    font-size: 1.125rem;
-    font-weight: 600;
-}
-
-.card-desc {
-    font-size: 1rem;
-    color: var(--wsbc-black);
-}
-
-.card-off {
-    border-style: dashed;
+.home-send:disabled {
+    opacity: 0.5;
     cursor: not-allowed;
 }
 
-.recent-heading {
-    margin: 0 0 8px;
-    font-size: 0.875rem;
-    font-weight: 600;
-}
-
-.list {
-    margin: 0;
-    padding: 0;
-    list-style: none;
+/* ---------- Cards that are links ---------- */
+.home-card {
     display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.list-row {
-    display: flex;
-    justify-content: space-between;
     align-items: center;
     gap: 12px;
-    min-height: 44px;
-    box-sizing: border-box;
-    padding: 0 16px;
-    background: var(--wsbc-steel-grey);
-    border: 1px solid var(--wsbc-smoke-grey);
+    padding: 12px 14px;
     color: var(--wsbc-bodycopy);
     text-decoration: none;
 }
 
-a.list-row:hover {
-    border-color: var(--wsbc-orange);
+.home-card-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 
-.list-meta {
-    font-size: 0.8125rem;
+.home-card-title {
+    font-weight: 700;
+    overflow-wrap: anywhere;
 }
 
-a:focus-visible {
-    outline: 3px solid var(--wsbc-orange);
+.home-card-desc {
+    font-size: 0.875rem;
+    color: var(--wsbc-warm-grey);
+}
+
+.home-arrow {
+    width: 0;
+    height: 0;
+    flex-shrink: 0;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    border-left: 7px solid var(--wsbc-mountain-blue);
+}
+
+/* ---------- Suggested protocol sheet ---------- */
+/* Overrides the orange h2 default, which fails contrast on white */
+.home-section-heading {
+    margin: 0 0 6px 2px;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--wsbc-bodycopy);
+}
+
+.home-muted {
+    font-size: 0.9375rem;
+    color: var(--wsbc-warm-grey);
+}
+
+.home-error {
+    border-left: 4px solid var(--wsbc-huckleberry-red);
+    border-radius: 0 12px 12px 0;
+    color: var(--wsbc-bodycopy);
+}
+
+/* ---------- Hover and focus ---------- */
+.home-card:hover {
+    box-shadow: inset 0 0 0 2px var(--wsbc-orange);
+}
+
+.home-input:focus-visible,
+.home-mic:focus-visible,
+.home-send:focus-visible,
+.home-card:focus-visible {
+    outline: 3px solid var(--wsbc-black);
     outline-offset: 2px;
 }
