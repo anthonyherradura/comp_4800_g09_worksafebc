@@ -7,6 +7,14 @@ import { LogoLockup } from "../../components/Logo";
 import "../../styles/forms.css";
 import "./Login.css";
 
+const InfoIcon = () => (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="2" />
+        <path d="M12 11v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        <circle cx="12" cy="7.75" r="1.25" fill="currentColor" />
+    </svg>
+);
+
 export default function LoginPage() {
     const { user, login } = useAuth();
     const navigate = useNavigate();
@@ -48,7 +56,7 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="page-content auth-page">
+        <div className="page-content auth-page auth-login">
             <LogoLockup color="#E68A00" className="auth-logo" />
             <h1 className="auth-title">Sign in</h1>
 
@@ -78,6 +86,7 @@ export default function LoginPage() {
                     onChange={handleChange}
                     error={errors.password}
                 />
+                <p className="auth-hint">At least 8 characters.</p>
 
                 <button type="submit" className="btn btn-orange auth-submit" disabled={pending}>
                     {pending ? "Signing in…" : "Sign in"}
@@ -86,6 +95,13 @@ export default function LoginPage() {
 
             <p className="auth-switch">
                 New to HIIPS360? <Link to="/register">Create an account</Link>
+            </p>
+
+            <p className="auth-notice">
+                <span className="auth-notice-icon">
+                    <InfoIcon />
+                </span>
+                <span>Prototype for WorkSafeBC by BCIT students. Not connected to WorkSafeBC systems.</span>
             </p>
         </div>
     );

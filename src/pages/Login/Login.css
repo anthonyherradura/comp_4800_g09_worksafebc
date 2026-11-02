@@ -1,3 +1,8 @@
+/* Login and register pages – uses the --wsbc-* variables from styles/tokens.css.
+   Form fields and .form-error come from styles/forms.css.
+   The orange header, curved white page and blue band come from the frame the app already
+   puts around these pages, so this file only holds what is unique to the sign-in content. */
+
 /* Shared by the login and register pages */
 .auth-page {
     gap: 24px;
@@ -15,4 +20,82 @@
 .auth-title {
     margin: 0;
     color: var(--wsbc-bodycopy);
+}
+
+/* ==========================================================
+   Sign-in page only. Scoped to .auth-login so the register page is unchanged.
+   ========================================================== */
+
+/* Smaller logo, on the left */
+.auth-login .auth-logo {
+    width: 108px;
+    max-width: none;
+    margin: 0;
+}
+
+.auth-login .auth-title {
+    font-size: 1.75rem;
+    line-height: 1.2;
+    font-weight: 700;
+}
+
+.auth-hint {
+    margin: -10px 0 0;
+    color: var(--wsbc-warm-grey);
+    font-size: 0.8125rem;
+    line-height: 1.4;
+}
+
+.auth-login .auth-submit {
+    width: 100%;
+    min-height: 48px;
+    color: var(--wsbc-black);
+    /* white on orange is only 2.4:1 */
+    font-size: 1.0625rem;
+}
+
+.auth-switch {
+    margin: 0;
+    text-align: center;
+}
+
+/* Padding makes the inline link a full-size touch target */
+.auth-switch a {
+    display: inline-block;
+    padding: 12px 4px;
+    color: var(--wsbc-bodycopy);
+    font-weight: 700;
+    text-decoration: underline;
+}
+
+.auth-switch a:focus-visible {
+    outline: 3px solid var(--wsbc-black);
+    outline-offset: 2px;
+}
+
+/* Pinned to the bottom of the page */
+.auth-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin: auto 0 0;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--wsbc-pale-sunrise-yellow);
+    color: var(--wsbc-bodycopy);
+    font-size: 0.8125rem;
+    line-height: 1.4;
+}
+
+.auth-notice-icon {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    margin-top: 1px;
+}
+
+.auth-notice-icon svg {
+    display: block;
+    width: 100%;
+    height: 100%;
 }
