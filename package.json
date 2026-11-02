@@ -13,6 +13,8 @@
     "lint": "eslint .",
     "test": "node --test --experimental-test-module-mocks \"tests/*.test.js\"",
     "test:ai-live": "node --env-file=.env scripts/ai-smoke.mjs",
+    "db:setup": "node --env-file=.env scripts/db-setup.mjs",
+    "test:db": "node --env-file-if-exists=.env --test \"tests/db/*.test.js\"",
     "preview": "vite preview"
   },
   "dependencies": {
