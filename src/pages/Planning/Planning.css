@@ -1,122 +1,233 @@
+/* Planning page – WorkSafeBC card style, matching the Hazard, Summary and Home pages.
+   Typography, colours and the --wsbc-* variables come from styles/tokens.css.
+   This file only holds what is unique to the planning page. */
+
 .planning-page {
     flex: 1;
     min-height: 0;
-    padding: 18px 13px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 20px 22px;
     overflow-y: auto;
+    color: var(--wsbc-bodycopy);
 }
 
-.planning-panel {
-    min-height: 100%;
-    border: 10px solid #d9d9d9;
-    background: #a0a0a0;
-}
-
+/* The orange colour and heading font come from the h2 rule in tokens.css */
 .planning-title {
     margin: 0;
-    padding: 10px 8px 6px;
-    border-bottom: 5px solid #555;
-    color: #713500;
-    font-size: 1.25rem;
-    font-weight: 500;
-    text-align: center;
-    text-transform: uppercase;
+    font-size: 1.75rem;
+    line-height: 1.2;
+    font-weight: 700;
 }
 
-.planning-notes {
-    padding: 9px;
-    border-bottom: 5px solid #555;
+/* Soft grey panel holding white cards */
+.planning-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 0;
+    padding: 8px;
+    list-style: none;
+    border-radius: 14px;
+    background: var(--wsbc-ash-grey);
 }
 
-.planning-notes textarea {
+/* White rounded card */
+.planning-card {
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: var(--wsbc-white);
+}
+
+/* ---------- Visit notes ---------- */
+.planning-label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 0.875rem;
+    font-weight: 700;
+}
+
+.planning-textarea {
     display: block;
     width: 100%;
     min-height: 84px;
+    padding: 10px 12px;
+    border: 1px solid var(--wsbc-steel-grey);
+    border-radius: 10px;
     resize: vertical;
-    border: 0;
-    border-radius: 0;
-    padding: 10px;
-    background: #d9d9d9;
-    color: var(--wsbc-black);
+    background: var(--wsbc-white);
+    color: var(--wsbc-bodycopy);
     font: inherit;
 }
 
-.planning-notes textarea::placeholder { color: #555; }
-
-.planning-checklist {
-    display: grid;
-    gap: 10px;
-    margin: 0;
-    padding: 8px 10px 20px;
-    list-style: none;
+.planning-textarea::placeholder {
+    color: var(--wsbc-warm-grey);
 }
 
+/* Overrides the default h3 size */
+.planning-subtitle {
+    margin: 4px 0 -4px 2px;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--wsbc-bodycopy);
+}
+
+/* ---------- Checklist ---------- */
 .planning-item {
-    display: grid;
-    grid-template-columns: 44px minmax(0, 1fr);
+    display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
+}
+
+/* The round status button; tapping it opens the menu */
+.planning-status-wrap {
+    position: relative;
+    flex-shrink: 0;
 }
 
 .planning-status {
-    position: relative;
     display: grid;
     place-items: center;
     width: 44px;
     height: 44px;
-    border: 2px solid #d9d9d9;
+    padding: 0;
+    border: 2px solid var(--wsbc-steel-grey);
     border-radius: 50%;
-    background: #d9d9d9;
-    color: var(--wsbc-black);
-    font-size: 1.6rem;
-}
-
-.planning-status--ready,
-.planning-status--not-applicable { background: var(--wsbc-orange); }
-
-.planning-status select {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    opacity: 0;
+    background: var(--wsbc-white);
+    color: var(--wsbc-white);
+    font: inherit;
+    font-size: 1.4rem;
+    font-weight: 700;
+    line-height: 1;
     cursor: pointer;
 }
 
+/* Status colours, shared by the button and the small circles in the menu */
+.planning-status--ready {
+    border-color: var(--wsbc-moss-green);
+    background: var(--wsbc-moss-green);
+}
+
+.planning-status--not-applicable {
+    border-color: var(--wsbc-iron-grey);
+    background: var(--wsbc-iron-grey);
+}
+
+/* ---------- Status menu ---------- */
+.planning-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    z-index: 5;
+    width: min(240px, 70vw);
+    padding: 4px;
+    border: 1px solid var(--wsbc-steel-grey);
+    border-radius: 12px;
+    background: var(--wsbc-white);
+}
+
+.planning-menu--up {
+    top: auto;
+    bottom: calc(100% + 6px);
+}
+
+.planning-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 44px;
+    padding: 0 10px;
+    border: none;
+    border-radius: 8px;
+    background: none;
+    color: var(--wsbc-bodycopy);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.planning-option:hover,
+.planning-option--selected {
+    background: var(--wsbc-ash-grey);
+}
+
+.planning-option--selected {
+    font-weight: 700;
+}
+
+.planning-dot {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    border: 2px solid var(--wsbc-steel-grey);
+    border-radius: 50%;
+    background: var(--wsbc-white);
+    color: var(--wsbc-white);
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.planning-check {
+    margin-left: auto;
+    font-weight: 700;
+}
+
 .planning-item-text {
+    flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 3px;
-    min-width: 0;
-    padding: 5px 7px;
-    border-bottom: 5px solid #555;
-    background: #d9d9d9;
-    color: var(--wsbc-black);
+    align-items: flex-start;
+    gap: 4px;
     overflow-wrap: anywhere;
 }
 
-.planning-item-text small { color: #555; }
+.planning-item-name {
+    font-weight: 700;
+}
+
+.planning-pill {
+    padding: 1px 10px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.5;
+    color: var(--wsbc-bodycopy);
+}
+
+.planning-pill--pending {
+    background: var(--wsbc-pale-sunrise-yellow);
+}
+
+.planning-pill--ready {
+    background: var(--wsbc-pale-moss-green);
+}
+
+.planning-pill--not-applicable {
+    background: var(--wsbc-silver-grey);
+}
 
 .planning-demo {
-    margin: 0;
-    padding: 0 10px 12px;
-    color: #222;
+    margin: 0 0 0 2px;
     font-size: 0.75rem;
     line-height: 1.5;
+    color: var(--wsbc-warm-grey);
 }
 
-.planning-status:focus-within,
-.planning-notes textarea:focus-visible {
+/* ---------- Focus ---------- */
+.planning-status:focus-visible,
+.planning-textarea:focus-visible {
     outline: 3px solid var(--wsbc-black);
-    outline-offset: 3px;
+    outline-offset: 2px;
 }
 
-.planning-sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
+/* Inside the menu, so the outline isn't clipped */
+.planning-option:focus-visible {
+    outline: 3px solid var(--wsbc-black);
+    outline-offset: -3px;
 }
