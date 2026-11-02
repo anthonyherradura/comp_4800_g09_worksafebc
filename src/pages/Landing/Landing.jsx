@@ -3,20 +3,20 @@ import { LogoStacked } from "../../components/Logo";
 import useInstallPrompt from "../../pwa/useInstallPrompt";
 import "./Landing.css";
 
-const OfflineIcon = () => (
+const DocumentIcon = () => (
     <svg viewBox="0 0 24 24" aria-hidden="true">
         <path
-            d="M7 18h10.5a4 4 0 0 0 .6-7.95A6 6 0 0 0 6.6 8.6 4.75 4.75 0 0 0 7 18Z"
+            d="M6 3h8l5 5v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"
             fill="none"
             stroke="currentColor"
             strokeWidth="2"
             strokeLinejoin="round"
         />
-        <path d="M3 3l18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        <path d="M14 3v5h5M8.5 13h7M8.5 17h7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
 );
 
-const CameraIcon = () => (
+const CameraPlusIcon = () => (
     <svg viewBox="0 0 24 24" aria-hidden="true">
         <path
             d="M3 8.5A1.5 1.5 0 0 1 4.5 7h3l1.5-2.5h6L16.5 7h3A1.5 1.5 0 0 1 21 8.5v10a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5v-10Z"
@@ -25,7 +25,7 @@ const CameraIcon = () => (
             strokeWidth="2"
             strokeLinejoin="round"
         />
-        <circle cx="12" cy="13.5" r="3.5" fill="none" stroke="currentColor" strokeWidth="2" />
+        <path d="M12 11.25v4.5M9.75 13.5h4.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
 );
 
@@ -53,46 +53,21 @@ const InfoIcon = () => (
 
 const BENEFITS = [
     {
-        title: "Works offline",
-        text: "Sheets and inspection notes are kept on your phone, so poor signal on site doesn't stop you.",
-        Icon: OfflineIcon,
+        title: "Every sheet in your pocket",
+        text: "Search in plain words, or browse the original protocol sheets.",
+        Icon: DocumentIcon,
     },
     {
-        title: "From photo to sheet",
-        text: "Take a site photo and get a suggested protocol sheet. You can also browse for it.",
-        Icon: CameraIcon,
+        title: "From photo to hazard",
+        text: "Photograph or describe what you see and get a suggested hazard name.",
+        Icon: CameraPlusIcon,
     },
     {
         title: "Your call, every time",
-        text: "Every suggestion can be confirmed, edited or dismissed. The judgement stays yours.",
+        text: "Every suggestion can be confirmed, edited or dismissed.",
         Icon: CheckIcon,
     },
 ];
-
-function InstallHelp({ isIOS }) {
-    if (isIOS) {
-        return (
-            <div className="install-help">
-                <p className="install-help-title">To install on iPhone or iPad:</p>
-                <ol className="install-steps">
-                    <li>Open this page in Safari.</li>
-                    <li>
-                        Tap the <strong>Share</strong> button.
-                    </li>
-                    <li>
-                        Choose <strong>Add to Home Screen</strong>.
-                    </li>
-                </ol>
-            </div>
-        );
-    }
-    return (
-        <p className="install-help">
-            Your browser doesn't offer an install prompt here. Open this page in Chrome or Edge to
-            install, or keep using it in the browser.
-        </p>
-    );
-}
 
 export default function LandingPage() {
     const { canInstall, promptInstall, isInstalled, isIOS } = useInstallPrompt();
@@ -109,40 +84,44 @@ export default function LandingPage() {
                     </div>
                     <p className="landing-eyebrow">Hazard Identification Inspection Protocol Sheets</p>
                     <h1 id="landing-title" className="landing-title">
-                        The HIIPS sheets, <span className="landing-title-accent">on your phone</span>
+                        The HIIPS sheets, on your phone
                     </h1>
                     <p className="landing-lead">
-                        Hazards, controls and the governing regulation for the work in front of you, built to
-                        keep working when the signal drops.
+                        Hazards, controls and the governing regulation for the work in front of you.
                     </p>
                 </div>
             </section>
 
-            <div className="landing-inner landing-body">
+            <div className="landing-body">
                 <p className="prototype-notice">
                     <span className="prototype-notice-icon">
                         <InfoIcon />
                     </span>
                     <span>
-                        <strong>Prototype.</strong> HIIPS360 is a BCIT student prototype for WorkSafeBC. It is
-                        not connected to WorkSafeBC systems and does not write inspection reports.
+                        Prototype. HIIPS360 is a BCIT student prototype for WorkSafeBC. It isn't connected to
+                        WorkSafeBC systems and doesn't write inspection reports.
                     </span>
                 </p>
 
                 <div className="landing-actions">
-                    {canInstall ? (
-                        <button type="button" className="btn btn-orange landing-btn" onClick={promptInstall}>
-                            Install app
-                        </button>
-                    ) : (
-                        <InstallHelp isIOS={isIOS} />
-                    )}
-                    <Link to="/login" className="btn btn-outline-orange landing-btn">
+                    <Link to="/login" className="btn btn-orange landing-btn">
                         Sign in
                     </Link>
-                    <p className="landing-alt">
-                        New here? <Link to="/register">Create an account</Link>
-                    </p>
+                    <Link to="/register" className="btn btn-outline-orange landing-btn">
+                        Create an account
+                    </Link>
+
+                    {canInstall ? (
+                        <button type="button" className="landing-install-btn" onClick={promptInstall}>
+                            Install the app on your phone
+                        </button>
+                    ) : (
+                        <p className="landing-install">
+                            {isIOS
+                                ? "Install it: in Safari tap Share, then Add to Home Screen."
+                                : "Your browser doesn't offer an install prompt here. Open this page in Chrome or Edge to install, or keep using it in the browser."}
+                        </p>
+                    )}
                 </div>
 
                 <section className="landing-benefits" aria-labelledby="benefits-title">

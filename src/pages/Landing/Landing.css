@@ -1,9 +1,16 @@
-/* The hero runs edge to edge, so sections handle their own padding.
-   Doubled class so this beats .page-content, which is defined in a stylesheet that loads later */
+/* Landing page – uses the --wsbc-* variables from styles/tokens.css.
+   This file only holds what is unique to the landing page. */
+
+/* Orange hero on top, then a white card with curved top corners on a light grey page.
+   Doubled class so this beats .page-content, which is defined in a stylesheet that loads later.
+   The light grey background matters: tokens.css makes the page body iron grey. */
 .page-content.landing {
     flex: 1 0 auto;
     gap: 0;
     padding: 0;
+    overflow-y: visible;
+    background: var(--wsbc-ash-grey);
+    color: var(--wsbc-bodycopy);
 }
 
 /* Keeps line length readable when the page is opened on a wide screen */
@@ -13,21 +20,19 @@
     margin: 0 auto;
 }
 
-/* Hero */
+/* ---------- Hero ---------- */
+/* The extra bottom padding is the part the white card slides up over */
 .landing-hero {
-    padding: 32px 22px 36px;
-    background: var(--wsbc-iron-grey);
-    border-bottom: 4px solid var(--wsbc-orange);
-    color: var(--wsbc-white);
+    padding: 28px 22px 60px;
+    background: var(--wsbc-orange);
+    color: var(--wsbc-black);
+    text-align: center;
 }
 
-/* Stacked lockup on its orange tile */
+/* Stacked lockup sits straight on the orange */
 .landing-logo {
-    width: 132px;
-    margin: 0 0 20px;
-    padding: 18px 20px;
-    border-radius: 20px;
-    background: #e68a00;
+    width: 120px;
+    margin: 0 auto 14px;
 }
 
 .landing-logo svg {
@@ -36,10 +41,11 @@
     height: auto;
 }
 
+/* Black on orange is 8.3:1. The body copy colour is only 4.1:1 there, so the hero uses black */
 .landing-eyebrow {
-    margin: 0 0 12px;
-    color: var(--wsbc-steel-grey);
-    font-size: 0.8125rem;
+    margin: 0 0 14px;
+    color: var(--wsbc-black);
+    font-size: 0.75rem;
     font-weight: 700;
     letter-spacing: 0.06em;
     line-height: 1.4;
@@ -48,30 +54,31 @@
 
 .landing-title {
     margin: 0;
-    color: var(--wsbc-white);
+    color: var(--wsbc-black);
     font-size: clamp(var(--fs-h1), 7vw, 2.25rem);
     line-height: 1.15;
     text-wrap: balance;
 }
 
-/* Orange on iron grey is 3.9:1, which passes AA only because the H1 is large text */
-.landing-title-accent {
-    color: var(--wsbc-orange);
-}
-
 .landing-lead {
-    margin: 16px 0 0;
-    color: var(--wsbc-ash-grey);
+    margin: 14px 0 0;
+    color: var(--wsbc-black);
     font-size: 1.0625rem;
-    line-height: 1.55;
+    line-height: 1.5;
+    text-wrap: balance;
 }
 
-/* Body */
+/* ---------- White card ---------- */
 .landing-body {
     display: flex;
     flex-direction: column;
-    gap: 28px;
-    padding: 24px 22px 40px;
+    gap: 20px;
+    width: calc(100% - 24px);
+    max-width: 560px;
+    margin: -32px auto 12px;
+    padding: 20px 16px 28px;
+    border-radius: 28px 28px 14px 14px;
+    background: var(--wsbc-white);
 }
 
 .prototype-notice {
@@ -80,8 +87,7 @@
     gap: 10px;
     margin: 0;
     padding: 12px 14px;
-    border-left: 4px solid var(--wsbc-sunrise-yellow);
-    border-radius: 0 4px 4px 0;
+    border-radius: 10px;
     background: var(--wsbc-pale-sunrise-yellow);
     color: var(--wsbc-bodycopy);
     font-size: 0.9375rem;
@@ -101,7 +107,7 @@
     height: 100%;
 }
 
-/* Actions */
+/* ---------- Actions ---------- */
 .landing-actions {
     display: flex;
     flex-direction: column;
@@ -111,6 +117,7 @@
 .landing-btn {
     min-height: 48px;
     width: 100%;
+    border-radius: 10px;
     font-size: 1.0625rem;
     text-decoration: none;
     touch-action: manipulation;
@@ -119,15 +126,14 @@
         filter 150ms ease-out;
 }
 
-/* The shared button colours fail AA (white on orange is 2.4:1, orange on white 2.5:1),
-   so this page swaps in passing pairs without touching the global tokens */
+/* The shared button colours fail AA (white on orange is 2.4:1),
+   so this page swaps in black text without touching the global tokens */
 .landing .btn-orange {
     color: var(--wsbc-black);
 }
 
 .landing .btn-outline-orange {
     background: var(--wsbc-white);
-    border-color: var(--wsbc-bodycopy);
     color: var(--wsbc-bodycopy);
 }
 
@@ -145,69 +151,46 @@
     filter: none;
 }
 
+/* Small centred install hint, or a text button when the browser can install the app */
+.landing-install {
+    margin: 4px 0 0;
+    color: var(--wsbc-warm-grey);
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    text-align: center;
+}
+
+.landing-install-btn {
+    min-height: 44px;
+    padding: 0 8px;
+    border: none;
+    background: none;
+    color: var(--wsbc-bodycopy);
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 700;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
 .landing-btn:focus-visible,
-.landing-alt a:focus-visible {
+.landing-install-btn:focus-visible {
     outline: 3px solid var(--wsbc-black);
     outline-offset: 2px;
 }
 
-.install-help {
-    margin: 0;
-    padding: 14px 16px;
-    border-radius: 4px;
-    background: var(--wsbc-ash-grey);
-    line-height: 1.5;
-}
-
-.install-help-title {
-    margin: 0 0 8px;
-    font-weight: 700;
-}
-
-.install-steps {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    margin: 0;
-    padding-left: 1.4rem;
-}
-
-.install-steps li::marker {
-    font-weight: 700;
-}
-
-.landing-alt {
-    margin: 4px 0 0;
-    text-align: center;
-}
-
-/* Padding makes the inline link a full-size touch target */
-.landing-alt a {
-    display: inline-block;
-    padding: 12px 4px;
-    font-weight: 700;
-}
-
-/* Benefits */
-/* Orange H2s fail contrast on white, so the heading uses body copy colour with an orange rule */
+/* ---------- Benefits ---------- */
 .landing-subtitle {
-    margin: 0 0 16px;
+    margin: 0 0 14px;
     color: var(--wsbc-bodycopy);
-}
-
-.landing-subtitle::after {
-    content: "";
-    display: block;
-    width: 40px;
-    height: 4px;
-    margin-top: 8px;
-    background: var(--wsbc-orange);
+    font-size: 1.25rem;
+    font-weight: 700;
 }
 
 .benefits {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
     margin: 0;
     padding: 0;
     list-style: none;
@@ -216,11 +199,7 @@
 .benefit {
     display: flex;
     align-items: flex-start;
-    gap: 14px;
-    padding: 16px;
-    border: 1px solid var(--wsbc-silver-grey);
-    border-radius: 4px;
-    background: var(--wsbc-ash-grey);
+    gap: 12px;
 }
 
 .benefit-icon {
@@ -231,9 +210,9 @@
     width: 44px;
     height: 44px;
     padding: 10px;
-    border-radius: 4px;
-    background: var(--wsbc-orange);
-    color: var(--wsbc-black);
+    border-radius: 10px;
+    background: var(--wsbc-pale-mountain-blue);
+    color: var(--wsbc-bodycopy);
 }
 
 .benefit-icon svg {
@@ -243,12 +222,16 @@
 }
 
 .benefit-title {
-    margin: 2px 0 4px;
+    margin: 0 0 2px;
     color: var(--wsbc-bodycopy);
+    font-size: 1rem;
+    font-weight: 700;
 }
 
 .benefit-text {
     margin: 0;
+    color: var(--wsbc-warm-grey);
+    font-size: 0.875rem;
     line-height: 1.5;
 }
 
