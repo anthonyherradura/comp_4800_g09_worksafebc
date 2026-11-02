@@ -6,6 +6,8 @@ import { CAP_HEIGHT, HIIPS, NUM, STACK_HIIPS, STACK_NUM } from "./logoPaths";
 const INK = "#141414";
 const RAY_ANGLES = [0, 45, 90, 135, 180, 225, 270, 315];
 const MARK_BOX = 330; // the mark is drawn on a 330-unit square centred on 0,0
+// "360" inside the brackets, in mark units: as large as fits with a clear gap to them (97 would touch)
+const NUM_SIZE = 95;
 
 // Eight pairs of brackets around the centre
 function Rays({ fill }) {
@@ -29,7 +31,6 @@ const letters = (size, x, y) => `translate(${x} ${y}) scale(${size / 100})`;
 export function LogoLockup({ color = "#ffffff", className }) {
     const wordSize = 132;
     const markSize = 233;
-    const numSize = 52 * (MARK_BOX / markSize); // in the mark's own units
     const gap = 24;
 
     const wordWidth = (HIIPS.width * wordSize) / 100;
@@ -48,7 +49,7 @@ export function LogoLockup({ color = "#ffffff", className }) {
                 <path
                     d={NUM.d}
                     fill={INK}
-                    transform={letters(numSize, (-NUM.width * numSize) / 200, (CAP_HEIGHT * numSize) / 200)}
+                    transform={letters(NUM_SIZE, (-NUM.width * NUM_SIZE) / 200, (CAP_HEIGHT * NUM_SIZE) / 200)}
                 />
             </g>
         </svg>
