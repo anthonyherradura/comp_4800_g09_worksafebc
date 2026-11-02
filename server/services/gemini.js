@@ -5,11 +5,13 @@ import { GoogleGenAI } from "@google/genai";
 const MODEL = process.env.GEMINI_MODEL || "gemini-3.6-flash";
 // Raced against MODEL when it is slow or fails (outage, quota, retired name). Set GEMINI_FALLBACK_MODEL= (empty) to turn off.
 const FALLBACK_MODEL = process.env.GEMINI_FALLBACK_MODEL ?? "gemini-3.5-flash";
+// Third in line, with its own quota. Set GEMINI_SECOND_FALLBACK_MODEL= (empty) to turn off.
+const SECOND_FALLBACK_MODEL = process.env.GEMINI_SECOND_FALLBACK_MODEL ?? "gemini-flash-lite-latest";
 
 // The answer is a few words, so skip the model's thinking step (cuts ~4 s to ~1-2 s).
-// Both models must support the "minimal" level (Gemini 3.5 / 3.6 Flash do; 3.7+ don't).
+// Every model must support the "minimal" level (Gemini 3.5 / 3.6 Flash and flash-lite-latest do; 3.7+ don't).
 const THINKING = { thinkingLevel: "minimal" };
-// If MODEL hasn't answered by then, start FALLBACK_MODEL too and take whichever answers first
+// If a model hasn't answered by then, start the next one too and take whichever answers first
 const HEDGE_AFTER_MS = 2500;
 // Give up on everything after this, so the officer never waits on a hung request
 const TIMEOUT_MS = 8000;
@@ -33,8 +35,8 @@ export async function suggestHazard({ text, photo }) {
     if (photo) parts.push({ inlineData: { mimeType: photo.mimetype, data: photo.buffer.toString("base64") } });
     parts.push({ text: text ? `Site officer's description: ${text}` : "Identify the main hazard in this photo." });
 
-    getClient(); // fail fast on a missing key instead of trying both models
-    const models = [MODEL, FALLBACK_MODEL].filter((m, i, all) => m && all.indexOf(m) === i);
+    getClient(); // fail fast on a missing key instead of trying every model
+    const models = [MODEL, FALLBACK_MODEL, SECOND_FALLBACK_MODEL].filter((m, i, all) => m && all.indexOf(m) === i);
     return firstAnswer(models, parts);
 }
 

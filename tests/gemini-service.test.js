@@ -6,6 +6,7 @@ import assert from "node:assert/strict";
 process.env.GEMINI_API_KEY = "test-key";
 process.env.GEMINI_MODEL = "primary-model";
 process.env.GEMINI_FALLBACK_MODEL = "backup-model";
+process.env.GEMINI_SECOND_FALLBACK_MODEL = "third-model";
 
 // Each test sets how each model behaves: model name -> (abortSignal) => Promise<{ text }>
 let models = {};
@@ -94,17 +95,24 @@ test("GEM-08 primary slow: fallback starts at 2.5 s, first answer wins, the slow
     assert.equal(calls[0].signal.aborted, true);
 });
 
-test("GEM-09 both models fail: rejects with the last error", async (t) => {
-    setup(t, { "primary-model": fails("quota exceeded"), "backup-model": fails("503 overloaded") });
-    await assert.rejects(suggestHazard({ text: "x" }), { message: "503 overloaded" });
+test("GEM-09 every model fails: rejects with the last error", async (t) => {
+    setup(t, {
+        "primary-model": fails("quota exceeded"),
+        "backup-model": fails("503 overloaded"),
+        "third-model": fails("503 high demand"),
+    });
+    await assert.rejects(suggestHazard({ text: "x" }), { message: "503 high demand" });
+    assert.deepEqual(calls.map((c) => c.model), ["primary-model", "backup-model", "third-model"]);
 });
 
-test("GEM-10 neither model answers: rejects after 8 s and cancels both requests", async (t) => {
-    setup(t, { "primary-model": hangs(), "backup-model": hangs() });
+test("GEM-10 no model answers: rejects after 8 s and cancels every request", async (t) => {
+    setup(t, { "primary-model": hangs(), "backup-model": hangs(), "third-model": hangs() });
     const result = suggestHazard({ text: "x" });
     t.mock.timers.tick(2500);
-    t.mock.timers.tick(5500);
+    t.mock.timers.tick(2500);
+    t.mock.timers.tick(3000);
     await assert.rejects(result, { message: "No answer from Gemini within 8 s" });
+    assert.equal(calls.length, 3);
     assert.ok(calls.every((c) => c.signal.aborted));
 });
 
@@ -128,6 +136,31 @@ test("GEM-12 a model that explains itself over several lines: only the hazard na
 
     models = { "primary-model": answers('\n  "Missing Guardrail."\r\nBecause the deck is open.') };
     assert.equal(await suggestHazard({ text: "scaffold" }), "Missing Guardrail");
+});
+
+test("GEM-14 primary and backup fail: the second fallback answers at once", async (t) => {
+    setup(t, {
+        "primary-model": fails("429 quota"),
+        "backup-model": fails("503 overloaded"),
+        "third-model": answers("Unsecured Ladder"),
+    });
+    assert.equal(await suggestHazard({ text: "ladder" }), "Unsecured Ladder");
+    assert.deepEqual(calls.map((c) => c.model), ["primary-model", "backup-model", "third-model"]);
+});
+
+test("GEM-15 primary and backup both slow: the second fallback starts at 5 s and its answer is used", async (t) => {
+    setup(t, { "primary-model": hangs(), "backup-model": hangs(), "third-model": answers("Unguarded Table Saw") });
+    const result = suggestHazard({ text: "table saw" });
+
+    t.mock.timers.tick(2500);
+    assert.equal(calls.length, 2);
+    t.mock.timers.tick(2499);
+    assert.equal(calls.length, 2);
+    t.mock.timers.tick(1);
+    assert.equal(calls.length, 3);
+
+    assert.equal(await result, "Unguarded Table Saw");
+    assert.ok(calls[0].signal.aborted && calls[1].signal.aborted);
 });
 
 test("GEM-13 Gemini can't read the photo: BAD_PHOTO error and the fallback is not tried (B-03)", async (t) => {
