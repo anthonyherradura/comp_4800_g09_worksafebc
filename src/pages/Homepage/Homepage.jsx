@@ -1,10 +1,18 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useHazards } from "../../context/HazardContext";
+import { formatOpened } from "../../data/recentSheets";
 import "./Homepage.css";
 
 export default function HomePage() {
     const [query, setQuery] = useState("");
     const navigate = useNavigate();
+    const { hazards } = useHazards();
+
+    // Newest first, five at most.
+    const recent = [...hazards]
+        .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""))
+        .slice(0, 5);
 
     function handleSearch(e) {
         e.preventDefault();
@@ -41,6 +49,24 @@ export default function HomePage() {
                     <span className="card-desc">Open the original sheets as PDF</span>
                 </Link>
             </div>
+
+            <section aria-labelledby="recent-heading">
+                <h2 id="recent-heading" className="recent-heading">Recent</h2>
+                {recent.length === 0 ? (
+                    <p className="list-meta">No hazards added yet.</p>
+                ) : (
+                    <ul className="list">
+                        {recent.map((hazard) => (
+                            <li key={hazard.id}>
+                                <Link className="list-row" to={`/hazard/${hazard.id}`}>
+                                    <span>{hazard.name || "Untitled hazard"}</span>
+                                    <span className="list-meta">{formatOpened(hazard.createdAt)}</span>
+                                </Link>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </section>
         </div>
     );
 }
