@@ -492,6 +492,43 @@
     resize: vertical;
 }
 
+/* Guidance tab: what the protocol sheet says about this hazard */
+.hd-guidance {
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: var(--wsbc-ash-grey);
+    color: var(--wsbc-bodycopy);
+}
+
+.hd-guidance-stage {
+    margin: 0 0 8px;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--wsbc-warm-grey);
+}
+
+.hd-guidance-heading {
+    margin: 14px 0 6px;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--wsbc-bodycopy);
+}
+
+.hd-guidance-list {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.hd-guidance-list li + li {
+    margin-top: 4px;
+}
+
+.hd-guidance-text {
+    margin: 0;
+    font-size: 0.9375rem;
+    overflow-wrap: anywhere;
+}
+
 .hd-photos {
     display: flex;
     flex-direction: column;

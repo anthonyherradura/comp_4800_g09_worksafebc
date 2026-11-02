@@ -1,12 +1,14 @@
 // AI API. Needs a signed-in officer.
 //   POST /api/ai/suggest-hazard  (multipart: text?, photo?)  -> 200 { suggestion }
+//   POST /api/ai/match-sheet     (multipart: text?, photo?)  -> 200 { matches: [{ sheetId, reason }] }
 // Errors are { error } with a message that is safe to show to the officer.
 
 import { Router } from "express";
 import multer from "multer";
 import { rateLimit } from "express-rate-limit";
 import requireAuth from "../middleware/requireAuth.js";
-import { suggestHazard } from "../services/gemini.js";
+import { matchSheets, suggestHazard } from "../services/gemini.js";
+import { SHEET_CATALOG } from "../services/sheetCatalog.js";
 
 const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
 const MAX_TEXT_CHARS = 500;
@@ -44,29 +46,54 @@ const uploadPhoto = (req, res, next) =>
 
 const asString = (value) => (typeof value === "string" ? value : "");
 
-const router = Router();
-
-router.post("/suggest-hazard", requireAuth, aiLimiter, uploadPhoto, async (req, res) => {
+// The officer's text and photo, or null after answering 400 when they're missing or too long
+function readInput(req, res, emptyMessage) {
     const text = asString(req.body?.text).trim();
     const photo = req.file;
 
-    if (!text && !photo) return res.status(400).json({ error: "Add a photo or describe the hazard first." });
-    if (text.length > MAX_TEXT_CHARS) {
-        return res.status(400).json({ error: `Keep the description under ${MAX_TEXT_CHARS} characters.` });
+    if (!text && !photo) {
+        res.status(400).json({ error: emptyMessage });
+        return null;
     }
+    if (text.length > MAX_TEXT_CHARS) {
+        res.status(400).json({ error: `Keep the description under ${MAX_TEXT_CHARS} characters.` });
+        return null;
+    }
+    return { text, photo };
+}
+
+function sendGeminiError(res, err) {
+    if (err.code === "BAD_PHOTO") {
+        return res.status(400).json({ error: "We couldn't read that photo. Try another one." });
+    }
+    console.error("Gemini request failed:", err);
+    const detail = process.env.NODE_ENV === "production" ? "" : ` (${err.message})`;
+    res.status(502).json({
+        error: `The AI suggestion service isn't available right now. Try again in a moment.${detail}`,
+    });
+}
+
+const router = Router();
+
+router.post("/suggest-hazard", requireAuth, aiLimiter, uploadPhoto, async (req, res) => {
+    const input = readInput(req, res, "Add a photo or describe the hazard first.");
+    if (!input) return;
 
     try {
-        const suggestion = await suggestHazard({ text, photo });
-        res.json({ suggestion });
+        res.json({ suggestion: await suggestHazard(input) });
     } catch (err) {
-        if (err.code === "BAD_PHOTO") {
-            return res.status(400).json({ error: "We couldn't read that photo. Try another one." });
-        }
-        console.error("Gemini request failed:", err);
-        const detail = process.env.NODE_ENV === "production" ? "" : ` (${err.message})`;
-        res.status(502).json({
-            error: `The AI suggestion service isn't available right now. Try again in a moment.${detail}`,
-        });
+        sendGeminiError(res, err);
+    }
+});
+
+router.post("/match-sheet", requireAuth, aiLimiter, uploadPhoto, async (req, res) => {
+    const input = readInput(req, res, "Add a photo or describe the work first.");
+    if (!input) return;
+
+    try {
+        res.json({ matches: await matchSheets({ ...input, sheets: SHEET_CATALOG }) });
+    } catch (err) {
+        sendGeminiError(res, err);
     }
 });
 

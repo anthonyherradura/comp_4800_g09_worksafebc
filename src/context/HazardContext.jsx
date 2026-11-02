@@ -1,6 +1,9 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import usePersistentState from "../hooks/usePersistentState";
 import { loadPhoto, newId, removePhoto, savePhoto, shrinkImage } from "../data/store";
+import { getSheetHazards } from "../data/sheets";
+import { syncSheetHazards } from "../data/syncSheetHazards";
+import { useJobs } from "./JobContext";
 
 const HazardContext = createContext(null);
 
@@ -14,7 +17,10 @@ async function toBlob(input) {
 
 // Hazards are saved on the device (IndexedDB), and each photo is saved as its own record.
 // When the backend is ready, only this file needs to change.
+// Each hazard belongs to a job (worksiteId = job id); the pages only see the current job's hazards.
 export function HazardProvider({ children }) {
+    const { currentJob } = useJobs();
+    const jobId = currentJob?.id ?? null;
     const [stored, setHazards, loaded] = usePersistentState("hiips360.hazards", []);
     const [urls, setUrls] = useState({}); // photo id -> URL the browser can show
     const urlsRef = useRef(urls);
@@ -36,10 +42,14 @@ export function HazardProvider({ children }) {
         );
     }, [stored, loaded]);
 
-    // What the rest of the app sees: hazards with a photos list of URLs, as before.
+    // What the rest of the app sees: the current job's hazards with a photos list of URLs.
+    // Hazards saved before jobs existed have no worksiteId; they still show so nothing is lost.
     const hazards = useMemo(
-        () => stored.map((h) => ({ ...h, photos: (h.photoIds ?? []).map((id) => urls[id]).filter(Boolean) })),
-        [stored, urls]
+        () =>
+            stored
+                .filter((h) => h.worksiteId == null || h.worksiteId === jobId)
+                .map((h) => ({ ...h, photos: (h.photoIds ?? []).map((id) => urls[id]).filter(Boolean) })),
+        [stored, urls, jobId]
     );
 
     const dropPhoto = (pid) => {
@@ -79,7 +89,7 @@ export function HazardProvider({ children }) {
             ...prev,
             {
                 id,
-                worksiteId: null, // filled in once the worksite model exists
+                worksiteId: jobId,
                 name,
                 comment: "",
                 photoIds: [],
@@ -106,13 +116,19 @@ export function HazardProvider({ children }) {
         );
     };
 
+    // Called when the officer picks, changes or clears a job's protocol sheet (sheetId null to clear)
+    const applySheet = (forJobId, sheetId) =>
+        setHazards((prev) =>
+            syncSheetHazards(prev, { jobId: forJobId, sheetId, sheetHazards: getSheetHazards(sheetId), makeId })
+        );
+
     const deleteHazard = (id) => {
         stored.find((h) => h.id === id)?.photoIds?.forEach(dropPhoto);
         setHazards((prev) => prev.filter((h) => h.id !== id));
     };
 
     return (
-        <HazardContext.Provider value={{ hazards, addHazard, updateHazard, addPhotos, deleteHazard }}>
+        <HazardContext.Provider value={{ hazards, addHazard, updateHazard, addPhotos, deleteHazard, applySheet }}>
             {loaded ? children : null}
         </HazardContext.Provider>
     );

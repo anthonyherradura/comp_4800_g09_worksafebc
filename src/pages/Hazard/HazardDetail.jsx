@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useHazards } from "../../context/HazardContext";
 import { STATUS_LABEL, getHazardStatus } from "../../data/hazardStatus";
+import { getSheetHazard } from "../../data/sheets";
 import { BackIcon } from "./HazardIcons";
 import "./Hazard.css";
 
@@ -11,13 +12,46 @@ const PlusIcon = () => (
     </svg>
 );
 
-// Page 3: hazard info, comment, photo collection, not applicable, delete
+// What the protocol sheet says about a hazard: where it comes up, the controls expected, the law behind it
+function SheetGuidance({ guidance }) {
+    return (
+        <div className="hd-guidance">
+            {guidance.stage && <p className="hd-guidance-stage">{guidance.stage}</p>}
+            {guidance.details.length > 0 && (
+                <ul className="hd-guidance-list">
+                    {guidance.details.map((d) => (
+                        <li key={d}>{d}</li>
+                    ))}
+                </ul>
+            )}
+            {guidance.controls.length > 0 && (
+                <>
+                    <h3 className="hd-guidance-heading">Controls that should be in place</h3>
+                    <ul className="hd-guidance-list">
+                        {guidance.controls.map((c) => (
+                            <li key={c}>{c}</li>
+                        ))}
+                    </ul>
+                </>
+            )}
+            {guidance.legislation && (
+                <>
+                    <h3 className="hd-guidance-heading">Legislation</h3>
+                    <p className="hd-guidance-text">{guidance.legislation}</p>
+                </>
+            )}
+        </div>
+    );
+}
+
+// Page 3: hazard info, sheet guidance, comment, photo collection, not applicable, delete
 export default function HazardDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
     const { hazards, updateHazard, addPhotos, deleteHazard } = useHazards();
-    const [tab, setTab] = useState("comment"); // "comment" | "photos"
     const hazard = hazards.find((h) => h.id === id);
+    const guidance = hazard?.source === "sheet" ? getSheetHazard(hazard.sheetId, hazard.sheetKey) : null;
+    const [tab, setTab] = useState(guidance ? "guidance" : "comment"); // "guidance" | "comment" | "photos"
 
     // Happens for a deleted hazard or a link to one that isn't saved on this device
     if (!hazard) {
@@ -74,12 +108,25 @@ export default function HazardDetail() {
                         <span className="hd-tile">
                             {count} photo{count === 1 ? "" : "s"}
                         </span>
-                        <span className="hd-tile hd-tile--blank" />
+                        <span className="hd-tile">{hazard.source === "sheet" ? "From sheet" : "Added by you"}</span>
                     </div>
                 </div>
             </div>
 
             <div className="hd-tabs" role="tablist" aria-label="Hazard details">
+                {guidance && (
+                    <button
+                        type="button"
+                        role="tab"
+                        id="hd-tab-guidance"
+                        aria-selected={tab === "guidance"}
+                        aria-controls="hd-panel-guidance"
+                        className="hd-tab"
+                        onClick={() => setTab("guidance")}
+                    >
+                        Guidance
+                    </button>
+                )}
                 <button
                     type="button"
                     role="tab"
@@ -104,7 +151,11 @@ export default function HazardDetail() {
                 </button>
             </div>
 
-            {tab === "comment" ? (
+            {tab === "guidance" && guidance ? (
+                <div role="tabpanel" id="hd-panel-guidance" aria-labelledby="hd-tab-guidance">
+                    <SheetGuidance guidance={guidance} />
+                </div>
+            ) : tab === "comment" ? (
                 <div role="tabpanel" id="hd-panel-comment" aria-labelledby="hd-tab-comment">
                     <textarea
                         className="hd-textarea"

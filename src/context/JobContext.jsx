@@ -68,12 +68,24 @@ export function JobProvider({ children }) {
 
     const deleteJob = (id) => setJobs((prev) => prev.filter((j) => j.id !== id));
 
+    // The protocol sheet the officer picked for this job (a sheetId from data/sheets, or null)
+    const setJobSheet = (id, sheetId) =>
+        setJobs((prev) => prev.map((j) => (j.id === id ? { ...j, sheetId } : j)));
+
+    // Planning checklist progress for this job: item id (from the sheet) -> "pending" | "ready" | "not-applicable"
+    const setChecklistStatus = (id, itemId, status) =>
+        setJobs((prev) =>
+            prev.map((j) => (j.id === id ? { ...j, checklist: { ...j.checklist, [itemId]: status } } : j))
+        );
+
     // Most recently used first
     const sorted = [...jobs].sort((a, b) => b.lastOpenedAt.localeCompare(a.lastOpenedAt));
     const currentJob = sorted[0] ?? null;
 
     return (
-        <JobContext.Provider value={{ jobs: sorted, currentJob, addJob, openJob, deleteJob }}>
+        <JobContext.Provider
+            value={{ jobs: sorted, currentJob, addJob, openJob, deleteJob, setJobSheet, setChecklistStatus }}
+        >
             {children}
         </JobContext.Provider>
     );

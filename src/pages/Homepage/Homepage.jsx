@@ -1,63 +1,154 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { MicIcon } from "../Hazard/HazardIcons";
-import { suggestHazard } from "../Hazard/suggestHazard";
+import { useHazards } from "../../context/HazardContext";
+import { useJobs } from "../../context/JobContext";
+import { SHEET_CATALOG, getSheetChecklist, getSheetHazards } from "../../data/sheets";
+import { matchesWords } from "../../data/sheets/catalog";
+import { shrinkImage } from "../../data/store";
+import { CameraPlusIcon } from "../Hazard/HazardIcons";
+import { matchSheets } from "./matchSheets";
 import "./Homepage.css";
 
-// What the AI route returns when it can't name a hazard
-const NO_HAZARD = "No hazard identified";
+const byId = Object.fromEntries(SHEET_CATALOG.map((s) => [s.sheetId, s]));
+const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
-const SendIcon = () => (
+const CheckIcon = () => (
     <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path
-            d="M4 12 20 4l-4 16-4.5-6.5L4 12ZM11.5 13.5 20 4"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        />
+        <path d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
 );
 
+const SparkleIcon = () => (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 2.5 14 9l6.5 2-6.5 2-2 6.5-2-6.5-6.5-2L10 9l2-6.5Z" fill="currentColor" />
+        <path d="M19 15.5 19.8 18l2.2.7-2.2.8L19 22l-.8-2.5-2.2-.8 2.2-.7.8-2.5Z" fill="currentColor" />
+    </svg>
+);
+
+// One sheet in a list: tap to pick it for the job, tap again to clear it
+function SheetOption({ sheet, reason, selected, onPick }) {
+    return (
+        <li>
+            <button
+                type="button"
+                className={`home-card home-sheet${selected ? " is-selected" : ""}`}
+                aria-pressed={selected}
+                onClick={() => onPick(sheet.sheetId)}
+            >
+                <span className="home-card-text">
+                    <span className="home-card-title">{sheet.name}</span>
+                    {reason && <span className="home-sheet-reason">{reason}</span>}
+                    <span className="home-card-desc">
+                        {[sheet.cu, `Issued ${sheet.issued}`].filter(Boolean).join(" · ")}
+                    </span>
+                </span>
+                <span className="home-sheet-check" aria-hidden="true">
+                    {selected && <CheckIcon />}
+                </span>
+            </button>
+        </li>
+    );
+}
+
+// Home: pick the protocol sheet for the current job by name, by describing the work (Gemini) or from a photo.
+// PRD: reach the sheet for the work, and confirm or change the one offered.
 export default function HomePage() {
+    const { currentJob, setJobSheet } = useJobs();
+    const { applySheet } = useHazards();
     const [query, setQuery] = useState("");
-    const [suggestion, setSuggestion] = useState("");
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
+    const [ai, setAi] = useState({ status: "idle" }); // idle | loading | done | error
+    const selected = byId[currentJob?.sheetId] ?? null;
 
-    const canSend = query.trim() && !loading;
+    const aiMatches = ai.status === "done" ? ai.matches.filter((m) => byId[m.sheetId]) : [];
+    const filtered = SHEET_CATALOG.filter((s) => matchesWords(s, query));
+    // A description usually matches no sheet name. Once the AI has answered, list every sheet instead of none.
+    const showAll = !query.trim() || (filtered.length === 0 && ai.status !== "idle");
+    const listed = showAll ? SHEET_CATALOG : filtered;
 
-    function handleChange(e) {
-        setQuery(e.target.value);
-        setSuggestion(""); // the old suggestion no longer matches the prompt
-        setError("");
+    // Picking a sheet fills the job's hazard list from it (and the Planning checklist reads it too)
+    function pick(sheetId) {
+        const next = sheetId === selected?.sheetId ? null : sheetId;
+        setJobSheet(currentJob.id, next);
+        applySheet(currentJob.id, next);
     }
 
-    // Enter and the Send button both come through here
-    async function handleSend(e) {
-        e.preventDefault();
-        if (!canSend) return;
-        setLoading(true);
-        setError("");
-        setSuggestion("");
+    async function ask({ text, photoFile }) {
+        setAi({ status: "loading", fromPhoto: !!photoFile });
         try {
-            setSuggestion(await suggestHazard({ text: query.trim(), photoFile: null }));
+            const matches = await matchSheets({ text, photoFile });
+            setAi({ status: "done", fromPhoto: !!photoFile, matches });
         } catch (err) {
-            setError(err.message);
-        } finally {
-            setLoading(false);
+            setAi({ status: "error", message: err.message });
         }
     }
+
+    function handleAsk(e) {
+        e.preventDefault();
+        if (query.trim() && ai.status !== "loading") ask({ text: query.trim() });
+    }
+
+    async function handlePhoto(e) {
+        const file = e.target.files?.[0];
+        e.target.value = ""; // lets the same photo be picked again
+        if (!file) return;
+        // Phone photos are 3 to 5 MB; a smaller JPEG uploads faster and is plenty for Gemini
+        const photoFile = (await shrinkImage(file).catch(() => null)) ?? file;
+        ask({ text: query.trim(), photoFile });
+    }
+
+    if (!currentJob) {
+        return (
+            <div className="page-content">
+                <h1 className="home-title">What work are you inspecting?</h1>
+                <div className="home-panel">
+                    <Link className="home-card" to="/jobs">
+                        <span className="home-card-text">
+                            <span className="home-card-title">Select a job site first</span>
+                            <span className="home-card-desc">The protocol sheet is saved with the job</span>
+                        </span>
+                        <span className="home-arrow" aria-hidden="true" />
+                    </Link>
+                </div>
+            </div>
+        );
+    }
+
+    const loading = ai.status === "loading";
 
     return (
         <div className="page-content">
             <h1 className="home-title">What work are you inspecting?</h1>
 
-            <form className="home-panel" onSubmit={handleSend}>
+            {selected && (
+                <section className="home-selected" aria-labelledby="selected-heading">
+                    <h2 id="selected-heading" className="home-section-heading">
+                        Protocol sheet for <span className="home-job-name">{currentJob.label}</span>
+                    </h2>
+                    <p className="home-selected-name">
+                        {selected.name} <span className="home-selected-cu">{selected.cu}</span>
+                    </p>
+                    <ul className="home-selected-links">
+                        <li>
+                            <Link to="/hazard">{plural(getSheetHazards(selected.sheetId).length, "hazard")} to review</Link>
+                        </li>
+                        <li>
+                            <Link to="/planning">
+                                {plural(getSheetChecklist(selected.sheetId).length, "checklist item")} before you go
+                            </Link>
+                        </li>
+                        <li>
+                            <a href={`/sheets-pdf/${selected.sheetId}.pdf`} target="_blank" rel="noreferrer">
+                                Open the sheet (PDF)
+                            </a>
+                        </li>
+                    </ul>
+                </section>
+            )}
+
+            <form className="home-panel" onSubmit={handleAsk} role="search">
                 <div className="home-box">
                     <label className="home-search-label" htmlFor="home-query">
-                        Describe what you see, search a sheet or regulation
+                        Search sheets, or describe the work and ask AI
                     </label>
                     <div className="home-prompt">
                         <input
@@ -66,29 +157,78 @@ export default function HomePage() {
                             type="search"
                             maxLength={500}
                             value={query}
-                            disabled={loading}
-                            onChange={handleChange}
-                            placeholder="Construction, scaffolding, PBE, etc."
+                            onChange={(e) => setQuery(e.target.value)}
+                            placeholder="Sheet name, CU number or the work"
+                            enterKeyHint="search"
                         />
-                        <button type="button" className="home-mic" aria-label="Voice input">
-                            <MicIcon />
-                        </button>
-                        <button type="submit" className="home-send" aria-label="Send" disabled={!canSend}>
-                            <SendIcon />
+                        <label className={`home-photo${loading ? " is-disabled" : ""}`} title="Match from a photo">
+                            <CameraPlusIcon />
+                            <input
+                                className="home-visually-hidden"
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp"
+                                capture="environment"
+                                aria-label="Match a protocol sheet from a photo of the worksite"
+                                disabled={loading}
+                                onChange={handlePhoto}
+                            />
+                        </label>
+                        <button type="submit" className="home-send" aria-label="Ask AI" disabled={!query.trim() || loading}>
+                            <SparkleIcon />
                         </button>
                     </div>
                 </div>
             </form>
 
-            <div className="home-panel">
-                <Link className="home-card" to="/hazard">
-                    <span className="home-card-text">
-                        <span className="home-card-title">Identify work type/hazards from a photo</span>
-                        <span className="home-card-desc">Take a photo on arrival and confirm the work type with AI</span>
-                    </span>
-                    <span className="home-arrow" aria-hidden="true" />
-                </Link>
+            {ai.status !== "idle" && (
+                <section aria-labelledby="ai-heading" aria-live="polite">
+                    <h2 id="ai-heading" className="home-section-heading">
+                        {ai.fromPhoto ? "Suggested from your photo" : "Suggested by AI"}
+                    </h2>
+                    {loading ? (
+                        <p className="home-box home-panel-note">Matching protocol sheets…</p>
+                    ) : ai.status === "error" ? (
+                        <p role="alert" className="home-box home-error">{ai.message}</p>
+                    ) : aiMatches.length === 0 ? (
+                        <p className="home-box home-panel-note">
+                            No protocol sheet covers that work. Try describing it differently, or pick from the list.
+                        </p>
+                    ) : (
+                        <ul className="home-panel">
+                            {aiMatches.map((m) => (
+                                <SheetOption
+                                    key={m.sheetId}
+                                    sheet={byId[m.sheetId]}
+                                    reason={m.reason}
+                                    selected={m.sheetId === selected?.sheetId}
+                                    onPick={pick}
+                                />
+                            ))}
+                        </ul>
+                    )}
+                </section>
+            )}
 
+            <section aria-labelledby="all-heading">
+                <h2 id="all-heading" className="home-section-heading">
+                    {showAll
+                        ? `All protocol sheets (${SHEET_CATALOG.length})`
+                        : `${filtered.length} of ${SHEET_CATALOG.length} sheets match “${query.trim()}”`}
+                </h2>
+                {listed.length === 0 ? (
+                    <p className="home-box home-panel-note">
+                        No sheet names match. Tap Ask AI to search by what the work is.
+                    </p>
+                ) : (
+                    <ul className="home-panel">
+                        {listed.map((s) => (
+                            <SheetOption key={s.sheetId} sheet={s} selected={s.sheetId === selected?.sheetId} onPick={pick} />
+                        ))}
+                    </ul>
+                )}
+            </section>
+
+            <div className="home-panel">
                 <Link className="home-card" to="/pdfs">
                     <span className="home-card-text">
                         <span className="home-card-title">Protocol sheet PDFs</span>
@@ -97,35 +237,6 @@ export default function HomePage() {
                     <span className="home-arrow" aria-hidden="true" />
                 </Link>
             </div>
-
-            <section aria-labelledby="suggested-heading">
-                <h2 id="suggested-heading" className="home-section-heading">
-                    Suggested protocol sheet
-                </h2>
-                <div className="home-panel" aria-live="polite">
-                    {error ? (
-                        <p role="alert" className="home-box home-error">
-                            {error}
-                        </p>
-                    ) : suggestion && suggestion !== NO_HAZARD ? (
-                        <Link className="home-card" to={`/sheets?q=${encodeURIComponent(suggestion)}`}>
-                            <span className="home-card-text">
-                                <span className="home-card-title">{suggestion}</span>
-                                <span className="home-card-desc">Find the matching protocol sheets</span>
-                            </span>
-                            <span className="home-arrow" aria-hidden="true" />
-                        </Link>
-                    ) : (
-                        <p className="home-box home-muted">
-                            {loading
-                                ? "Thinking…"
-                                : suggestion
-                                    ? "No hazard identified. Try describing what you see in more detail."
-                                    : "Your suggestion will appear here."}
-                        </p>
-                    )}
-                </div>
-            </section>
         </div>
     );
 }

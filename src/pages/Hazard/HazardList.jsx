@@ -29,14 +29,18 @@ export default function HazardList() {
 
             <ul className="hl-panel">
                 {hazards.length === 0 ? (
-                    <li className="hl-empty">No hazards yet. Tap “Add hazard” to create one.</li>
+                    <li className="hl-empty">
+                        No hazards yet. Pick a protocol sheet on <Link to="/home">Home</Link> to load its hazards, or
+                        tap “Add hazard”.
+                    </li>
                 ) : (
                     hazards.map((h) => (
                         <li key={h.id}>
                             <Link to={`/hazard/${h.id}`} className="hl-card">
                                 <span className="hl-name">{h.name}</span>
                                 <span className="hl-meta">
-                                    {photoLabel(h.photos.length)} · {formatDate(h.createdAt)}
+                                    {/* Sheet hazards say where in the work they come up; ones the officer added say when */}
+                                    {photoLabel(h.photos.length)} · {h.stage ?? (h.source === "sheet" ? "From the sheet" : formatDate(h.createdAt))}
                                 </span>
                                 <span className="hl-divider" />
                                 <span className="hl-view">

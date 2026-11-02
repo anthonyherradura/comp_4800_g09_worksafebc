@@ -74,6 +74,18 @@
 }
 
 /* ---------- Checklist ---------- */
+/* One group of items from the sheet: Before you go, On arrival, Walking the site */
+.planning-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.planning-empty {
+    margin: 0;
+    font-size: 0.9375rem;
+}
+
 .planning-item {
     display: flex;
     align-items: center;

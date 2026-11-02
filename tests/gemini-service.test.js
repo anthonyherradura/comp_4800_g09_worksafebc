@@ -16,7 +16,7 @@ mock.module("@google/genai", {
         GoogleGenAI: class {
             models = {
                 generateContent: ({ model, contents, config }) => {
-                    calls.push({ model, contents, signal: config.abortSignal });
+                    calls.push({ model, contents, config, signal: config.abortSignal });
                     return models[model](config.abortSignal);
                 },
             };
@@ -24,7 +24,7 @@ mock.module("@google/genai", {
     },
 });
 
-const { suggestHazard } = await import("../server/services/gemini.js");
+const { suggestHazard, matchSheets } = await import("../server/services/gemini.js");
 
 const answers = (text) => () => Promise.resolve({ text });
 const fails = (message) => () => Promise.reject(new Error(message));
@@ -174,4 +174,52 @@ test("GEM-13 Gemini can't read the photo: BAD_PHOTO error and the fallback is no
     const photo = { mimetype: "image/jpeg", buffer: Buffer.from("not really a jpeg") };
     await assert.rejects(suggestHazard({ text: "", photo }), { code: "BAD_PHOTO" });
     assert.deepEqual(calls.map((c) => c.model), ["primary-model"]);
+});
+
+// ---------- matchSheets ----------
+const SHEETS = [
+    { sheetId: "cu-732044", name: "Log Transport", cu: "CU 732044", summary: "Hauling logs by logging truck." },
+    { sheetId: "cu-766011", name: "Long-term Care", cu: "CU 766011", summary: "Residential care facilities." },
+];
+const json = (value) => answers(JSON.stringify(value));
+
+test("GEM-16 matchSheets sends the catalogue, the photo and the description, and asks for JSON", async (t) => {
+    setup(t, { "primary-model": json({ matches: [] }) });
+    const photo = { mimetype: "image/jpeg", buffer: Buffer.from("jpg") };
+    await matchSheets({ text: "truck at the log dump", photo, sheets: SHEETS });
+
+    const [catalogue, image, description] = calls[0].contents;
+    assert.match(catalogue.text, /cu-732044 \| Log Transport \(CU 732044\) \| Hauling logs by logging truck\./);
+    assert.match(catalogue.text, /cu-766011 \| Long-term Care/);
+    assert.equal(image.inlineData.mimeType, "image/jpeg");
+    assert.deepEqual(description, { text: "Site officer's description of the work: truck at the log dump" });
+    assert.equal(calls[0].config.responseMimeType, "application/json");
+});
+
+test("GEM-17 matchSheets keeps Gemini's order, drops made-up and repeated sheets", async (t) => {
+    setup(t, {
+        "primary-model": json({
+            matches: [
+                { sheetId: "cu-766011", reason: " Care home " },
+                { sheetId: "cu-999999", reason: "not a real sheet" },
+                { sheetId: "cu-766011", reason: "again" },
+                { sheetId: "cu-732044", reason: "Trucks" },
+            ],
+        }),
+    });
+    assert.deepEqual(await matchSheets({ text: "x", sheets: SHEETS }), [
+        { sheetId: "cu-766011", reason: "Care home" },
+        { sheetId: "cu-732044", reason: "Trucks" },
+    ]);
+});
+
+test("GEM-18 matchSheets: an answer that isn't JSON counts as a failure and the fallback answers", async (t) => {
+    setup(t, {
+        "primary-model": answers("Log Transport"),
+        "backup-model": json({ matches: [{ sheetId: "cu-732044", reason: "Logging truck" }] }),
+    });
+    assert.deepEqual(await matchSheets({ text: "logging truck", sheets: SHEETS }), [
+        { sheetId: "cu-732044", reason: "Logging truck" },
+    ]);
+    assert.deepEqual(calls.map((c) => c.model), ["primary-model", "backup-model"]);
 });

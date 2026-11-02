@@ -1,4 +1,4 @@
-// TEST-1: POST /api/ai/suggest-hazard (server/routes/ai.js) with Gemini mocked out.
+// TEST-1: POST /api/ai/suggest-hazard and /api/ai/match-sheet (server/routes/ai.js) with Gemini mocked out.
 // Run with `npm test`. Covers sign-in, input validation, photo rules, Gemini failures and the rate limit.
 import { test, mock, before, after } from "node:test";
 import assert from "node:assert/strict";
@@ -6,12 +6,17 @@ import express from "express";
 
 // Each test sets what the mocked Gemini service does
 let fakeSuggest;
+let fakeMatch;
 const serviceCalls = [];
 mock.module("../server/services/gemini.js", {
     namedExports: {
         suggestHazard: async (input) => {
             serviceCalls.push(input);
             return fakeSuggest(input);
+        },
+        matchSheets: async (input) => {
+            serviceCalls.push(input);
+            return fakeMatch(input);
         },
     },
 });
@@ -200,4 +205,85 @@ test("AI-11 rate limit: the 31st request in 15 minutes gets 429", async () => {
     assert.equal(res.status, 429);
     assert.deepEqual(res.body, { error: "Too many suggestions. Wait a few minutes and try again." });
     assert.equal(serviceCalls.length, 30);
+});
+
+// ---------- POST /api/ai/match-sheet ----------
+// Its own copy of the router, so these requests don't count against the suggest-hazard tests' rate limit
+const { default: matchRoutes } = await import("../server/routes/ai.js?match-sheet-test");
+const toMatchUrl = (suggestUrl) => suggestUrl.replace(/suggest-hazard$/, "match-sheet");
+let matchUrl;
+let signedOutMatchUrl;
+before(async () => {
+    matchUrl = toMatchUrl(await startApp(matchRoutes));
+    signedOutMatchUrl = toMatchUrl(await startApp(matchRoutes, { signedIn: false }));
+});
+
+const resetMatch = (impl = async () => [{ sheetId: "cu-732044", reason: "Logging truck hauling logs" }]) => {
+    fakeMatch = impl;
+    serviceCalls.length = 0;
+};
+
+test("SHEET-01 signed out: 401 and Gemini is never called", async () => {
+    resetMatch();
+    const res = await post(signedOutMatchUrl, form({ text: "logging truck" }));
+    assert.equal(res.status, 401);
+    assert.equal(serviceCalls.length, 0);
+});
+
+test("SHEET-02 description: 200 with the matches, and Gemini gets every sheet in the catalogue", async () => {
+    resetMatch();
+    const res = await post(matchUrl, form({ text: "  truck hauling logs to the mill  " }));
+    assert.equal(res.status, 200);
+    assert.deepEqual(res.body, { matches: [{ sheetId: "cu-732044", reason: "Logging truck hauling logs" }] });
+    assert.equal(serviceCalls[0].text, "truck hauling logs to the mill");
+    assert.deepEqual(serviceCalls[0].sheets.map((s) => s.sheetId).sort(), ["cu-732044", "cu-766011"]);
+    assert.ok(serviceCalls[0].sheets.every((s) => s.name && s.summary));
+});
+
+test("SHEET-03 photo only: 200 and the photo reaches Gemini", async () => {
+    resetMatch();
+    const res = await post(matchUrl, form({ photos: [{ type: "image/webp", bytes: 4096 }] }));
+    assert.equal(res.status, 200);
+    assert.equal(serviceCalls[0].photo.mimetype, "image/webp");
+    assert.equal(serviceCalls[0].text, "");
+});
+
+test("SHEET-04 no sheet fits: 200 with an empty list", async () => {
+    resetMatch(async () => []);
+    const res = await post(matchUrl, form({ text: "bakery" }));
+    assert.equal(res.status, 200);
+    assert.deepEqual(res.body, { matches: [] });
+});
+
+test("SHEET-05 empty request: 400 asks for a photo or description of the work", async () => {
+    resetMatch();
+    const res = await post(matchUrl, form({ text: "   " }));
+    assert.equal(res.status, 400);
+    assert.deepEqual(res.body, { error: "Add a photo or describe the work first." });
+    assert.equal(serviceCalls.length, 0);
+});
+
+test("SHEET-06 same limits as suggest-hazard: 501 characters and HEIC photos are rejected", async () => {
+    resetMatch();
+    assert.equal((await post(matchUrl, form({ text: "a".repeat(501) }))).status, 400);
+    const heic = await post(matchUrl, form({ photos: [{ type: "image/heic", name: "IMG_0001.HEIC" }] }));
+    assert.deepEqual(heic.body, { error: "Photos must be JPEG, PNG or WebP." });
+    assert.equal(serviceCalls.length, 0);
+});
+
+test("SHEET-07 Gemini fails: 502, and an unreadable photo gets the photo message", async (t) => {
+    t.mock.method(console, "error", () => {});
+    resetMatch(async () => {
+        throw new Error("503 model overloaded");
+    });
+    const down = await post(matchUrl, form({ text: "logging" }));
+    assert.equal(down.status, 502);
+    assert.match(down.body.error, /^The AI suggestion service isn't available right now\./);
+
+    resetMatch(async () => {
+        throw Object.assign(new Error("unreadable"), { code: "BAD_PHOTO" });
+    });
+    const bad = await post(matchUrl, form({ photos: [{}] }));
+    assert.equal(bad.status, 400);
+    assert.deepEqual(bad.body, { error: "We couldn't read that photo. Try another one." });
 });

@@ -1,12 +1,8 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import { useJobs } from "../../context/JobContext";
+import { getSheetChecklist } from "../../data/sheets";
 import "./Planning.css";
-
-const INITIAL_ITEMS = [
-    { id: "sheet", label: "Confirm protocol sheet" },
-    { id: "equipment", label: "Review protective equipment" },
-    { id: "practices", label: "Review site practices" },
-    { id: "questions", label: "Prepare inspection questions" },
-];
 
 const STATUSES = [
     { value: "pending", label: "To review", symbol: "" },
@@ -102,9 +98,21 @@ function StatusPicker({ item, status, open, openUp, onToggle, onSelect, onClose 
 }
 
 export default function PlanningPage() {
+    const { currentJob, setChecklistStatus } = useJobs();
     const [notes, setNotes] = useState("");
-    const [statuses, setStatuses] = useState({});
     const [openId, setOpenId] = useState(null); // only one menu is open at a time
+    const [openUp, setOpenUp] = useState(false);
+
+    // The checklist comes from the job's protocol sheet; its progress is saved on the job
+    const items = getSheetChecklist(currentJob?.sheetId);
+    const statuses = currentJob?.checklist ?? {};
+    const groups = [...new Set(items.map((item) => item.group))];
+
+    // Items low on the screen open their menu upward so it stays visible
+    const toggle = (itemId, e) => {
+        setOpenUp(e.currentTarget.getBoundingClientRect().bottom > window.innerHeight * 0.6);
+        setOpenId(openId === itemId ? null : itemId);
+    };
 
     // Tapping anywhere outside the open menu closes it
     useEffect(() => {
@@ -138,35 +146,63 @@ export default function PlanningPage() {
                 </div>
             </div>
 
-            <h3 id="planning-checklist-title" className="planning-subtitle">
-                Preparation checklist
-            </h3>
-
-            <ul className="planning-panel" aria-labelledby="planning-checklist-title">
-                {INITIAL_ITEMS.map((item, index) => {
-                    const status = STATUSES.find((option) => option.value === (statuses[item.id] || "pending"));
+            {items.length === 0 ? (
+                <>
+                    <h3 className="planning-subtitle">Preparation checklist</h3>
+                    <p className="planning-card planning-empty">
+                        {currentJob?.sheetId ? (
+                            "This protocol sheet has no preparation items."
+                        ) : (
+                            <>
+                                Pick a protocol sheet on <Link to="/home">Home</Link> to load what to check before you
+                                go on site.
+                            </>
+                        )}
+                    </p>
+                </>
+            ) : (
+                groups.map((group) => {
+                    const headingId = `planning-${group.toLowerCase().replace(/\W+/g, "-")}`;
                     return (
-                        <li key={item.id} className="planning-card planning-item">
-                            <StatusPicker
-                                item={item}
-                                status={status}
-                                open={openId === item.id}
-                                openUp={index >= INITIAL_ITEMS.length / 2} // lower items open upward so the menu stays on screen
-                                onToggle={() => setOpenId(openId === item.id ? null : item.id)}
-                                onSelect={(value) => setStatuses((previous) => ({ ...previous, [item.id]: value }))}
-                                onClose={() => setOpenId(null)}
-                            />
-                            <div className="planning-item-text">
-                                <span className="planning-item-name">{item.label}</span>
-                                <span className={`planning-pill planning-pill--${status.value}`}>{status.label}</span>
-                            </div>
-                        </li>
+                        <section key={group} className="planning-group" aria-labelledby={headingId}>
+                            <h3 id={headingId} className="planning-subtitle">
+                                {group}
+                            </h3>
+                            <ul className="planning-panel">
+                                {items
+                                    .filter((item) => item.group === group)
+                                    .map((item) => {
+                                        const status = STATUSES.find(
+                                            (option) => option.value === (statuses[item.id] || "pending")
+                                        );
+                                        return (
+                                            <li key={item.id} className="planning-card planning-item">
+                                                <StatusPicker
+                                                    item={item}
+                                                    status={status}
+                                                    open={openId === item.id}
+                                                    openUp={openUp}
+                                                    onToggle={(e) => toggle(item.id, e)}
+                                                    onSelect={(value) => setChecklistStatus(currentJob.id, item.id, value)}
+                                                    onClose={() => setOpenId(null)}
+                                                />
+                                                <div className="planning-item-text">
+                                                    <span className="planning-item-name">{item.label}</span>
+                                                    <span className={`planning-pill planning-pill--${status.value}`}>
+                                                        {status.label}
+                                                    </span>
+                                                </div>
+                                            </li>
+                                        );
+                                    })}
+                            </ul>
+                        </section>
                     );
-                })}
-            </ul>
+                })
+            )}
 
             <p id="planning-demo" className="planning-demo">
-                Sample checklist · Changes last only while this page is open.
+                Visit notes last only while this page is open.
             </p>
         </div>
     );
