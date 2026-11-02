@@ -148,6 +148,10 @@ export default function JobsPage() {
                     </ul>
                 )}
             </section>
+
+            {jobs.length > 0 && (
+                <p className="jobs-hint">Tap a site to open it. × only removes it from this phone.</p>
+            )}
         </div>
     );
 }

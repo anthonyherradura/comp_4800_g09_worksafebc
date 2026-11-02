@@ -18,7 +18,7 @@
     font-size: 1.75rem;
     line-height: 1.2;
     font-weight: 700;
-    color: var(--wsbc-orange);
+    color: var(--wsbc-bodycopy);
 }
 
 /* Soft grey panel, used by the add bar and the saved list */
@@ -61,7 +61,8 @@
     border: none;
     border-radius: 10px;
     background: var(--wsbc-orange);
-    color: var(--wsbc-white);
+    color: var(--wsbc-black);
+    /* white on orange is only 2.4:1 */
     cursor: pointer;
 }
 
@@ -78,7 +79,7 @@
 
 /* ---------- Saved jobs ---------- */
 .jobs-list-panel {
-    flex: 1;
+    flex: 0 1 auto;
     min-height: 0;
     display: flex;
     flex-direction: column;
@@ -88,7 +89,8 @@
 /* Search box at the top of the saved list; stays in view while the list scrolls under it */
 .jobs-search {
     position: sticky;
-    top: -8px; /* the panel's padding, so it pins flush to the panel's top edge */
+    top: -8px;
+    /* the panel's padding, so it pins flush to the panel's top edge */
     z-index: 1;
     display: flex;
     align-items: center;
@@ -130,7 +132,7 @@
     gap: 8px;
 }
 
-/* Each job is one white rounded card; the current job gets an orange outline */
+/* Each job is one white rounded card; the current job is filled pale yellow with an orange outline */
 .jobs-row {
     display: flex;
     align-items: center;
@@ -141,8 +143,13 @@
     background: var(--wsbc-white);
 }
 
-.jobs-row:has(.jobs-item:hover, .jobs-item.is-current) {
+.jobs-row:has(.jobs-item:hover) {
     border-color: var(--wsbc-orange);
+}
+
+.jobs-row:has(.jobs-item.is-current) {
+    border-color: var(--wsbc-orange);
+    background: var(--wsbc-pale-sunrise-yellow);
 }
 
 .jobs-item {
@@ -166,10 +173,9 @@
 
 .jobs-label {
     min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
     font-weight: 700;
+    line-height: 1.35;
 }
 
 .jobs-meta {
@@ -179,7 +185,7 @@
 
 /* "Current" pill, drawn by CSS so the markup doesn't change */
 .jobs-item.is-current .jobs-label {
-    padding-right: 72px;
+    padding-right: 80px;
 }
 
 .jobs-item.is-current::after {
@@ -187,11 +193,11 @@
     position: absolute;
     top: 8px;
     right: 8px;
-    padding: 1px 8px;
+    padding: 1px 10px;
     border-radius: 999px;
-    background: var(--wsbc-pale-sunrise-yellow);
-    color: var(--wsbc-bodycopy);
-    font-size: 0.6875rem;
+    background: var(--wsbc-orange);
+    color: var(--wsbc-black);
+    font-size: 0.75rem;
     font-weight: 700;
 }
 
@@ -202,7 +208,7 @@
     padding: 12px;
     border: none;
     background: none;
-    color: var(--wsbc-orange);
+    color: var(--wsbc-bodycopy);
     cursor: pointer;
 }
 
@@ -213,6 +219,15 @@
     background: var(--wsbc-white);
     text-align: center;
     color: var(--wsbc-iron-grey);
+}
+
+/* Small note under the list */
+.jobs-hint {
+    margin: 0;
+    padding: 0 2px;
+    color: var(--wsbc-warm-grey);
+    font-size: 0.8125rem;
+    line-height: 1.4;
 }
 
 /* ---------- Optional extras (need small markup additions, see notes) ---------- */
