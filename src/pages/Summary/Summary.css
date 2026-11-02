@@ -1,5 +1,7 @@
 /* Summary page – WorkSafeBC card style, matching the Hazard pages.
-   Uses tokens from styles/tokens.css. .page-content (page padding and scroll) comes from Homepage.css. */
+   Typography, colours and .btn / .btn-orange come from styles/tokens.css.
+   This file only holds what is unique to the Summary page.
+   .page-content (page padding and scroll) comes from Homepage.css. */
 
 /* ---------- Title row ---------- */
 .sm-head {
@@ -8,6 +10,8 @@
     gap: 8px;
 }
 
+/* Same size and colour as the Hazard page titles.
+   The orange is set here because this title is an h1 (tokens.css only makes h2 orange). */
 .sm-title {
     margin: 0;
     font-size: 1.75rem;
@@ -230,10 +234,11 @@
     padding-top: 8px;
 }
 
+/* Same height and corners as the Hazard page buttons */
 .sm-primary {
     width: 100%;
-    min-height: 48px;
-    border-radius: 8px;
+    min-height: 44px;
+    border-radius: 10px;
     text-decoration: none;
 }
 
