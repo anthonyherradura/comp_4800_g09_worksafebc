@@ -40,8 +40,8 @@ export default function HomePage() {
 
             <div className="cards">
                 <Link className="card" to="/hazard">
-                    <span className="card-title">Identify work from a photo</span>
-                    <span className="card-desc">Take a photo on arrival and confirm the work type</span>
+                    <span className="card-title">Identify work type/hazards from a photo</span>
+                    <span className="card-desc">Take a photo on arrival and confirm the work type with AI</span>
                 </Link>
 
                 <Link className="card" to="/pdfs">

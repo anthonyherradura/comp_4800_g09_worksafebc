@@ -5,6 +5,7 @@ import SheetSearch from "../Hazard/SheetSearch";
 export default function SheetsPage() {
     const { sheetId } = useParams();
     const [params] = useSearchParams();
+    const q = params.get("q") || "";
     const sheet = SHEETS.find((s) => s.sheetId === sheetId);
 
     return (
@@ -12,9 +13,9 @@ export default function SheetsPage() {
             <Link to="/home">Back to home</Link>
             <h1>{sheet ? sheet.title : "Find a protocol sheet"}</h1>
             <SheetSearch
-                key={sheetId || "all"}
+                key={`${sheetId || "all"}:${q}`}
                 sheetId={sheetId}
-                initialQuery={params.get("q") || ""}
+                initialQuery={q}
             />
         </div>
     );
