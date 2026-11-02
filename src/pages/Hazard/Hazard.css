@@ -411,9 +411,12 @@
     justify-content: space-between;
 }
 
-.hl-title {
+.hl-title,
+.ha-title,
+.hd-title {
     margin: 0;
-    font-size: 1.5rem;
+    font-size: 1.75rem;
+    line-height: 1.2;
     font-weight: 700;
     color: var(--wsbc-orange);
 }
