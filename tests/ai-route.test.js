@@ -143,16 +143,13 @@ test("AI-08 photo size: exactly 10 MB accepted, 10 MB + 1 byte rejected", async 
     assert.deepEqual(res.body, { error: "The photo must be under 10 MB." });
 });
 
-test(
-    "AI-09 two photos in one request: 400 asks for one at a time",
-    { todo: "Bug: multer's LIMIT_FILE_COUNT isn't handled, so the officer gets a 500" },
-    async () => {
-        reset();
-        const res = await post(url, form({ photos: [{}, {}] }));
-        assert.equal(res.status, 400);
-        assert.deepEqual(res.body, { error: "Send one photo at a time." });
-    }
-);
+test("AI-09 two photos in one request: 400 asks for one at a time (B-02)", async () => {
+    reset();
+    const res = await post(url, form({ photos: [{}, {}] }));
+    assert.equal(res.status, 400);
+    assert.deepEqual(res.body, { error: "Send one photo at a time." });
+    assert.equal(serviceCalls.length, 0);
+});
 
 test("AI-10 Gemini fails: 502 with a safe message, raw detail only outside production", async (t) => {
     reset(async () => {
@@ -176,6 +173,18 @@ test("AI-10 Gemini fails: 502 with a safe message, raw detail only outside produ
     } finally {
         process.env.NODE_ENV = previous;
     }
+});
+
+test("AI-12 Gemini can't read the photo: 400 about the photo, not 'service isn't available' (B-03)", async (t) => {
+    reset(async () => {
+        throw Object.assign(new Error("Gemini couldn't read the photo (primary-model)"), { code: "BAD_PHOTO" });
+    });
+    const logged = t.mock.method(console, "error", () => {});
+
+    const res = await post(url, form({ photos: [{}] }));
+    assert.equal(res.status, 400);
+    assert.deepEqual(res.body, { error: "We couldn't read that photo. Try another one." });
+    assert.equal(logged.mock.callCount(), 0);
 });
 
 test("AI-11 rate limit: the 31st request in 15 minutes gets 429", async () => {

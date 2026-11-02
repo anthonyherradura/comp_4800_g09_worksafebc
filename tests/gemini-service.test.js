@@ -120,13 +120,25 @@ test("GEM-11 missing API key: fails before calling any model", async (t) => {
     }
 });
 
-test(
-    "GEM-12 a model that explains itself over several lines: only the hazard name is kept",
-    { todo: "Bug: the extra lines reach the officer as the suggested hazard name" },
-    async (t) => {
-        setup(t, {
-            "primary-model": answers("Unsecured Ladder\n\nThe ladder is not tied off and is set at a steep angle."),
-        });
-        assert.equal(await suggestHazard({ text: "ladder" }), "Unsecured Ladder");
-    }
-);
+test("GEM-12 a model that explains itself over several lines: only the hazard name is kept (B-09)", async (t) => {
+    setup(t, {
+        "primary-model": answers("Unsecured Ladder\n\nThe ladder is not tied off and is set at a steep angle."),
+    });
+    assert.equal(await suggestHazard({ text: "ladder" }), "Unsecured Ladder");
+
+    models = { "primary-model": answers('\n  "Missing Guardrail."\r\nBecause the deck is open.') };
+    assert.equal(await suggestHazard({ text: "scaffold" }), "Missing Guardrail");
+});
+
+test("GEM-13 Gemini can't read the photo: BAD_PHOTO error and the fallback is not tried (B-03)", async (t) => {
+    const unreadable = () =>
+        Promise.reject(
+            Object.assign(new Error('{"error":{"code":400,"message":"Unable to process input image.","status":"INVALID_ARGUMENT"}}'), {
+                status: 400,
+            })
+        );
+    setup(t, { "primary-model": unreadable, "backup-model": answers("unused") });
+    const photo = { mimetype: "image/jpeg", buffer: Buffer.from("not really a jpeg") };
+    await assert.rejects(suggestHazard({ text: "", photo }), { code: "BAD_PHOTO" });
+    assert.deepEqual(calls.map((c) => c.model), ["primary-model"]);
+});

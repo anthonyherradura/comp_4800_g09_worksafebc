@@ -5,7 +5,13 @@ export async function suggestHazard({ text, photoFile }) {
     if (text) body.append("text", text);
     if (photoFile) body.append("photo", photoFile);
 
-    const res = await fetch("/api/ai/suggest-hazard", { method: "POST", body, credentials: "same-origin" });
+    let res;
+    try {
+        res = await fetch("/api/ai/suggest-hazard", { method: "POST", body, credentials: "same-origin" });
+    } catch {
+        // No signal: fetch rejects with the browser's own text ("Failed to fetch", "Load failed")
+        throw new Error("Couldn't reach the server. Check your connection and try again.");
+    }
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || "Couldn't get a suggestion. Try again.");
     return data.suggestion;

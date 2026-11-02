@@ -45,17 +45,13 @@ test("CLI-04 a response that isn't JSON (API down behind the proxy): generic mes
     await assert.rejects(suggestHazard({ text: "x" }), { message: "Couldn't get a suggestion. Try again." });
 });
 
-test(
-    "CLI-05 no signal (fetch rejects): a plain message instead of the browser's error",
-    { todo: 'Bug: the officer sees "Failed to fetch" (Chrome) or "Load failed" (Safari)' },
-    async (t) => {
+for (const browserText of ["Load failed", "Failed to fetch"]) {
+    test(`CLI-05 no signal (fetch rejects with "${browserText}"): a plain message instead (B-10)`, async (t) => {
         t.mock.method(globalThis, "fetch", async () => {
-            throw new TypeError("Load failed");
+            throw new TypeError(browserText);
         });
-        await assert.rejects(suggestHazard({ text: "x" }), (err) => {
-            assert.notEqual(err.message, "Load failed");
-            assert.match(err.message, /connection/i);
-            return true;
+        await assert.rejects(suggestHazard({ text: "x" }), {
+            message: "Couldn't reach the server. Check your connection and try again.",
         });
-    }
-);
+    });
+}

@@ -75,6 +75,8 @@ function firstAnswer(models, parts) {
                 (err) => {
                     pending--;
                     if (done) return;
+                    // The fallback model would get the same unreadable photo, so don't spend quota on it
+                    if (err.code === "BAD_PHOTO") return finish(reject, err);
                     console.warn(`Gemini model ${model} failed:`, err.message.slice(0, 300));
                     if (next < models.length) start();
                     else if (pending === 0) finish(reject, err);
@@ -86,13 +88,24 @@ function firstAnswer(models, parts) {
 }
 
 async function askModel(model, parts, abortSignal) {
-    const response = await getClient().models.generateContent({
-        model,
-        contents: parts,
-        config: { systemInstruction: SYSTEM_INSTRUCTION, thinkingConfig: THINKING, abortSignal },
-    });
+    let response;
+    try {
+        response = await getClient().models.generateContent({
+            model,
+            contents: parts,
+            config: { systemInstruction: SYSTEM_INSTRUCTION, thinkingConfig: THINKING, abortSignal },
+        });
+    } catch (err) {
+        // Gemini answers 400 INVALID_ARGUMENT "Unable to process input image" for a corrupt photo
+        if (err.status === 400 && /unable to process input image/i.test(err.message)) {
+            throw Object.assign(new Error(`Gemini couldn't read the photo (${model})`), { code: "BAD_PHOTO" });
+        }
+        throw err;
+    }
 
-    const answer = (response.text ?? "").trim().replace(/^["'\s]+|["'.\s]+$/g, "");
+    // Only the first line: the model sometimes adds an explanation on the lines after the name
+    const firstLine = (response.text ?? "").trim().split("\n")[0];
+    const answer = firstLine.trim().replace(/^["'\s]+|["'.\s]+$/g, "");
     if (!answer) throw new Error(`Empty response from Gemini (${model})`);
     return answer.slice(0, 120);
 }

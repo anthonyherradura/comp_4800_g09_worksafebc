@@ -35,7 +35,10 @@ const uploadPhoto = (req, res, next) =>
         if (!err) return next();
         if (err.code === "LIMIT_FILE_SIZE") return res.status(400).json({ error: "The photo must be under 10 MB." });
         if (err.code === "BAD_PHOTO_TYPE") return res.status(400).json({ error: "Photos must be JPEG, PNG or WebP." });
-        if (err.code === "LIMIT_UNEXPECTED_FILE") return res.status(400).json({ error: "Send one photo at a time." });
+        // LIMIT_FILE_COUNT: two files in the photo field; LIMIT_UNEXPECTED_FILE: a file in another field
+        if (err.code === "LIMIT_FILE_COUNT" || err.code === "LIMIT_UNEXPECTED_FILE") {
+            return res.status(400).json({ error: "Send one photo at a time." });
+        }
         next(err);
     });
 
@@ -56,6 +59,9 @@ router.post("/suggest-hazard", requireAuth, aiLimiter, uploadPhoto, async (req, 
         const suggestion = await suggestHazard({ text, photo });
         res.json({ suggestion });
     } catch (err) {
+        if (err.code === "BAD_PHOTO") {
+            return res.status(400).json({ error: "We couldn't read that photo. Try another one." });
+        }
         console.error("Gemini request failed:", err);
         const detail = process.env.NODE_ENV === "production" ? "" : ` (${err.message})`;
         res.status(502).json({
