@@ -21,7 +21,7 @@
     font-size: 1.75rem;
     line-height: 1.2;
     font-weight: 700;
-    color: var(--wsbc-orange);
+    color: var(--wsbc-bodycopy);
 }
 
 /* Soft grey panel holding white cards */
@@ -43,29 +43,74 @@
     background: var(--wsbc-white);
 }
 
-/* ---------- Search box: text, photo and Ask AI on the side ---------- */
+/* ---------- Search box: text on top, photo and Ask AI buttons below ---------- */
 .home-box {
     margin: 0;
     padding: 12px 14px;
 }
 
+/* Doubled up so the input keeps its full size and square-ish corners
+   even when a global rule styles input[type="search"] */
+.home-search .home-input {
+    box-sizing: border-box;
+    height: 44px;
+    min-height: 44px;
+    padding: 0 12px;
+    border: 1px solid var(--wsbc-steel-grey);
+    border-radius: 6px;
+    font-size: 0.9375rem;
+    line-height: normal;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.home-search .home-input::placeholder {
+    font-size: 0.9375rem;
+}
+
+/* Same fixed size for the label and the button, whatever global button rules say */
+.home-search .home-action {
+    box-sizing: border-box;
+    height: 44px;
+    min-height: 0;
+    margin: 0;
+    padding: 0 10px;
+    border: 2px solid var(--wsbc-orange);
+    border-radius: 6px;
+    font-family: var(--font-body);
+    font-size: 0.9375rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.home-search .home-actions {
+    align-items: flex-start;
+}
+
+.home-search {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px;
+    border: 1px solid var(--wsbc-silver-grey);
+}
+
 .home-search-label {
     display: block;
-    margin-bottom: 8px;
     font-size: 0.875rem;
     font-weight: 700;
     color: var(--wsbc-bodycopy);
 }
 
-.home-prompt {
+.home-actions {
     display: flex;
-    align-items: center;
-    gap: 8px;
+    gap: 10px;
 }
 
 .home-input {
     flex: 1;
     min-width: 0;
+    width: 100%;
     height: 44px;
     padding: 0 12px;
     border: 1px solid var(--wsbc-steel-grey);
@@ -80,40 +125,38 @@
     color: var(--wsbc-warm-grey);
 }
 
-.home-photo,
-.home-send {
-    width: 44px;
-    height: 44px;
-    flex-shrink: 0;
-    padding: 11px;
-    border: none;
+/* Two outlined orange buttons. The photo one is a label wrapping the hidden file input */
+.home-action {
+    flex: 1;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 10px;
+    border: 2px solid var(--wsbc-orange);
+    border-radius: 10px;
+    background: var(--wsbc-white);
+    color: var(--wsbc-black);
+    font: inherit;
+    font-weight: 700;
     cursor: pointer;
 }
 
-.home-photo svg,
-.home-send svg {
+.home-action svg {
     display: block;
-    width: 100%;
-    height: 100%;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
 }
 
-/* A label wrapping the hidden file input, so it needs block sizing */
-.home-photo {
-    display: block;
-    border-radius: 50%;
-    background: var(--wsbc-silver-grey);
-    color: var(--wsbc-bodycopy);
-}
-
-.home-send {
-    border-radius: 10px;
-    background: var(--wsbc-orange);
-    color: var(--wsbc-white);
+.home-action:hover {
+    background: var(--wsbc-pale-sunrise-yellow);
 }
 
 .home-send:disabled {
-    opacity: 0.5;
     cursor: not-allowed;
+    /* keeps the same look as the photo button, like the design */
 }
 
 .home-photo.is-disabled {
@@ -171,7 +214,7 @@
 /* Overrides the orange h2 default, which fails contrast on white */
 .home-section-heading {
     margin: 0 0 6px 2px;
-    font-size: 0.9375rem;
+    font-size: 1.0625rem;
     font-weight: 700;
     color: var(--wsbc-bodycopy);
 }
@@ -191,6 +234,7 @@
 }
 
 .home-sheet.is-selected {
+    background: var(--wsbc-pale-sunrise-yellow);
     box-shadow: inset 0 0 0 2px var(--wsbc-orange);
 }
 
@@ -230,9 +274,18 @@
     background: var(--wsbc-ash-grey);
 }
 
-.home-selected-name {
+.home-selected-kicker {
     margin: 0 0 4px;
-    font-size: 1.125rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--wsbc-warm-grey);
+}
+
+.home-selected-name {
+    margin: 0 0 6px;
+    font-size: 1.25rem;
     font-weight: 700;
     overflow-wrap: anywhere;
 }
@@ -246,16 +299,41 @@
 .home-selected-links {
     display: flex;
     flex-direction: column;
-    gap: 2px;
     margin: 0;
     padding: 0;
     list-style: none;
-    font-weight: 700;
+}
+
+/* Each row: icon, text, blue arrow, with a thin divider between rows */
+.home-selected-links li+li {
+    border-top: 1px solid var(--wsbc-silver-grey);
 }
 
 .home-selected-links a {
-    display: inline-block;
-    padding: 4px 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 56px;
+    padding: 8px 0;
+    color: var(--wsbc-bodycopy);
+    text-decoration: none;
+}
+
+.home-link-icon {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    color: var(--wsbc-bodycopy);
+}
+
+.home-link-icon svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.home-link-icon--warn {
+    color: var(--wsbc-sunset-orange);
 }
 
 /* Messages in place of a list: loading, nothing found, errors */
@@ -280,6 +358,7 @@
 .home-input:focus-visible,
 .home-photo:focus-within,
 .home-send:focus-visible,
+.home-selected-links a:focus-visible,
 .home-card:focus-visible {
     outline: 3px solid var(--wsbc-black);
     outline-offset: 2px;

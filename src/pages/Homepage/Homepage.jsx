@@ -25,6 +25,28 @@ const SparkleIcon = () => (
     </svg>
 );
 
+const WarningIcon = () => (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 3 2.5 20h19L12 3Z" fill="currentColor" />
+        <path d="M12 9.5v5" stroke="var(--wsbc-white)" strokeWidth="2" strokeLinecap="round" />
+        <circle cx="12" cy="17.2" r="1.1" fill="var(--wsbc-white)" />
+    </svg>
+);
+
+const ChecklistIcon = () => (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="5" y="4" width="14" height="17" rx="2" fill="none" stroke="currentColor" strokeWidth="2" />
+        <path d="M9 3h6v3H9zM8.5 11h1.5M8.5 15h1.5M12.5 11h3M12.5 15h3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+);
+
+const DocumentIcon = () => (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M6 3h8l5 5v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+        <path d="M14 3v5h5M8.5 13h7M8.5 17h7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+);
+
 // One sheet in a list: tap to pick it for the job, tap again to clear it
 function SheetOption({ sheet, reason, selected, onPick }) {
     return (
@@ -121,62 +143,81 @@ export default function HomePage() {
 
             {selected && (
                 <section className="home-selected" aria-labelledby="selected-heading">
-                    <h2 id="selected-heading" className="home-section-heading">
-                        Protocol sheet for <span className="home-job-name">{currentJob.label}</span>
+                    <h2 id="selected-heading" className="home-selected-kicker">
+                        Protocol sheet for this job
                     </h2>
                     <p className="home-selected-name">
                         {selected.name} <span className="home-selected-cu">{selected.cu}</span>
                     </p>
                     <ul className="home-selected-links">
                         <li>
-                            <Link to="/hazard">{plural(getSheetHazards(selected.sheetId).length, "hazard")} to review</Link>
+                            <Link to="/hazard">
+                                <span className="home-link-icon home-link-icon--warn"><WarningIcon /></span>
+                                <span className="home-card-text">
+                                    <span className="home-card-title">
+                                        {plural(getSheetHazards(selected.sheetId).length, "hazard")} to review
+                                    </span>
+                                </span>
+                                <span className="home-arrow" aria-hidden="true" />
+                            </Link>
                         </li>
                         <li>
                             <Link to="/planning">
-                                {plural(getSheetChecklist(selected.sheetId).length, "checklist item")} before you go
+                                <span className="home-link-icon"><ChecklistIcon /></span>
+                                <span className="home-card-text">
+                                    <span className="home-card-title">
+                                        {plural(getSheetChecklist(selected.sheetId).length, "checklist item")}
+                                    </span>
+                                </span>
+                                <span className="home-arrow" aria-hidden="true" />
                             </Link>
                         </li>
                         <li>
                             <a href={`/sheets-pdf/${selected.sheetId}.pdf`} target="_blank" rel="noreferrer">
-                                Open the sheet (PDF)
+                                <span className="home-link-icon"><DocumentIcon /></span>
+                                <span className="home-card-text">
+                                    <span className="home-card-title">Open the sheet (PDF)</span>
+                                    <span className="home-card-desc">Issued {selected.issued}</span>
+                                </span>
+                                <span className="home-arrow" aria-hidden="true" />
                             </a>
                         </li>
                     </ul>
                 </section>
             )}
 
-            <form className="home-panel" onSubmit={handleAsk} role="search">
-                <div className="home-box">
-                    <label className="home-search-label" htmlFor="home-query">
-                        Search sheets, or describe the work and ask AI
-                    </label>
-                    <div className="home-prompt">
+            <form className="home-box home-search" onSubmit={handleAsk} role="search">
+                <label className="home-search-label" htmlFor="home-query">
+                    {selected ? "Change sheet: search, or describe the work" : "Search sheets, or describe the work and ask AI"}
+                </label>
+                <input
+                    id="home-query"
+                    className="home-input"
+                    type="search"
+                    maxLength={500}
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Sheet name, CU number or the work"
+                    enterKeyHint="search"
+                />
+                <div className="home-actions">
+                    <label className={`home-action home-photo${loading ? " is-disabled" : ""}`}>
+                        <CameraPlusIcon />
+                        <span>From a photo</span>
                         <input
-                            id="home-query"
-                            className="home-input"
-                            type="search"
-                            maxLength={500}
-                            value={query}
-                            onChange={(e) => setQuery(e.target.value)}
-                            placeholder="Sheet name, CU number or the work"
-                            enterKeyHint="search"
+                            className="home-visually-hidden"
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp"
+                            capture="environment"
+                            aria-label="Match a protocol sheet from a photo of the worksite"
+                            disabled={loading}
+                            onChange={handlePhoto}
                         />
-                        <label className={`home-photo${loading ? " is-disabled" : ""}`} title="Match from a photo">
-                            <CameraPlusIcon />
-                            <input
-                                className="home-visually-hidden"
-                                type="file"
-                                accept="image/jpeg,image/png,image/webp"
-                                capture="environment"
-                                aria-label="Match a protocol sheet from a photo of the worksite"
-                                disabled={loading}
-                                onChange={handlePhoto}
-                            />
-                        </label>
-                        <button type="submit" className="home-send" aria-label="Ask AI" disabled={!query.trim() || loading}>
-                            <SparkleIcon />
-                        </button>
-                    </div>
+                    </label>
+                    <button type="submit" className="home-action home-send" disabled={!query.trim() || loading}>
+                        <SparkleIcon />
+                        <span>Ask AI</span>
+                    </button>
                 </div>
             </form>
 
