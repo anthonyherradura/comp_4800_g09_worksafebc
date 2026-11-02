@@ -1,144 +1,224 @@
-/* Summary page – uses WorkSafeBC tokens from styles/tokens.css.
-   .page-content (page padding and scroll) comes from Homepage.css. */
+/* Summary page – WorkSafeBC card style, matching the Hazard pages.
+   Uses tokens from styles/tokens.css. .page-content (page padding and scroll) comes from Homepage.css. */
+
+/* ---------- Title row ---------- */
+.sm-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
 
 .sm-title {
     margin: 0;
     font-size: 1.75rem;
     line-height: 1.2;
+    font-weight: 700;
+    color: var(--wsbc-orange);
+}
+
+.sm-total {
+    min-width: 28px;
+    padding: 2px 10px;
+    border-radius: 12px;
+    background: var(--wsbc-silver-grey);
+    color: var(--wsbc-bodycopy);
+    font-size: 0.875rem;
+    font-weight: 700;
+    text-align: center;
 }
 
 .sm-note {
     margin: -12px 0 0;
-    font-size: 0.875rem;
-    color: var(--wsbc-bodycopy);
+    font-size: 0.8125rem;
+    color: var(--wsbc-warm-grey);
 }
 
 .sm-empty {
     margin: 0;
     padding: 24px 16px;
     text-align: center;
+    border-radius: 14px;
     background: var(--wsbc-ash-grey);
 }
 
-/* ---------- Counts strip ---------- */
+/* ---------- Count chips: adapt to the screen width ----------
+   Wide screens: all three on one row. Narrow phones: they wrap, and each row
+   stretches to fill the full width so nothing looks ragged. */
 .sm-counts {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
     margin: 0;
 }
 
 .sm-count {
+    flex: 1 1 auto;
     display: flex;
-    flex-direction: column-reverse;
     align-items: center;
-    gap: 2px;
-    padding: 10px 4px;
+    justify-content: center;
+    gap: 5px;
+    padding: 6px clamp(8px, 2.5vw, 12px);
+    border-radius: 999px;
     background: var(--wsbc-ash-grey);
-    border-top: 4px solid var(--wsbc-smoke-grey);
-    text-align: center;
+    font-size: clamp(0.75rem, 3.4vw, 0.875rem);
+    font-weight: 500;
+    line-height: 1.2;
+    white-space: nowrap;
 }
 
-.sm-count dt {
-    font-size: 0.8125rem;
-    line-height: 1.2;
+/* Dot, then number, then label */
+.sm-count::before {
+    content: "";
+    width: 9px;
+    height: 9px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: var(--wsbc-smoke-grey);
 }
 
 .sm-count dd {
+    order: 1;
     margin: 0;
-    font-family: var(--font-heading);
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: var(--wsbc-iron-grey);
 }
 
-.sm-count--unaddressed {
-    border-top-color: var(--wsbc-sunset-orange);
+.sm-count dt {
+    order: 2;
 }
 
-.sm-count--reviewed {
-    border-top-color: var(--wsbc-moss-green);
+.sm-count--unaddressed::before {
+    background: var(--wsbc-sunset-orange);
 }
 
+.sm-count--reviewed::before {
+    background: var(--wsbc-moss-green);
+}
+
+/* Status message: pale yellow while hazards are open, pale green when all are done */
 .sm-progress {
     margin: 0;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: var(--wsbc-pale-sunrise-yellow);
+    font-size: 0.875rem;
     font-weight: 700;
+}
+
+.sm-progress--done {
+    background: var(--wsbc-pale-moss-green);
 }
 
 /* ---------- Sections ---------- */
 .sm-section {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
 }
 
 /* Overrides the orange h2 default, which fails contrast on white */
 .sm-heading {
-    margin: 0;
-    font-size: 1rem;
+    margin: 0 0 0 2px;
+    font-size: 0.9375rem;
     font-weight: 700;
     color: var(--wsbc-bodycopy);
 }
 
+/* Grey panel holding the white cards, same as the hazard list */
 .sm-list {
     margin: 0;
-    padding: 0;
+    padding: 8px;
     list-style: none;
     display: flex;
     flex-direction: column;
     gap: 8px;
+    border-radius: 14px;
+    background: var(--wsbc-ash-grey);
 }
 
+/* Rounded white card; the coloured edge is clipped to the card's corners */
 .sm-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 4px 4px 4px 0;
-    background: var(--wsbc-ash-grey);
-    border-left: 6px solid var(--wsbc-smoke-grey);
+    position: relative;
+    overflow: hidden;
+    background: var(--wsbc-white);
+    border-radius: 12px;
+    color: var(--wsbc-bodycopy);
+    --sm-edge: var(--wsbc-smoke-grey);
+}
+
+.sm-row::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 5px;
+    background: var(--sm-edge);
 }
 
 .sm-section--unaddressed .sm-row {
-    border-left-color: var(--wsbc-sunset-orange);
+    --sm-edge: var(--wsbc-sunset-orange);
 }
 
 .sm-section--reviewed .sm-row {
-    border-left-color: var(--wsbc-moss-green);
+    --sm-edge: var(--wsbc-moss-green);
 }
 
 .sm-link {
-    flex: 1;
-    min-width: 0;
-    min-height: 48px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    padding: 4px 12px;
-    color: var(--wsbc-bodycopy);
+    display: block;
+    padding: 12px 14px 0 19px;
+    color: inherit;
     text-decoration: none;
 }
 
 .sm-name {
+    display: block;
     font-weight: 700;
     overflow-wrap: anywhere;
 }
 
 .sm-meta {
-    font-size: 0.8125rem;
+    display: block;
+    margin-top: 2px;
+    font-size: 0.875rem;
+    font-weight: 400;
+    color: var(--wsbc-warm-grey);
 }
 
 .sm-link:hover .sm-name {
     text-decoration: underline;
 }
 
+/* Dotted divider, then the action row */
+.sm-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 10px 14px 0 19px;
+    padding: 4px 0 6px;
+    border-top: 1px dotted var(--wsbc-smoke-grey);
+}
+
 .sm-row-action {
-    flex-shrink: 0;
-    min-height: 48px;
-    padding: 0.4rem 0.8rem;
-    background: var(--wsbc-white);
+    min-height: 44px;
+    padding: 0.3rem 0.8rem;
+    border-width: 1.5px;
     border-color: var(--wsbc-iron-grey);
+    border-radius: 8px;
+    background: var(--wsbc-white);
     color: var(--wsbc-iron-grey);
     font-size: 0.875rem;
+}
+
+.sm-view {
+    min-height: 44px;
+    margin-left: auto;
+    padding-left: 12px;
+    display: flex;
+    align-items: center;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--wsbc-mountain-blue);
+    text-decoration: none;
 }
 
 /* ---------- Footer ---------- */
@@ -153,6 +233,7 @@
 .sm-primary {
     width: 100%;
     min-height: 48px;
+    border-radius: 8px;
     text-decoration: none;
 }
 
@@ -164,6 +245,7 @@
 
 .sm-hint--result {
     padding: 8px 12px;
+    border-radius: 8px;
     background: var(--wsbc-iron-grey);
     color: var(--wsbc-white);
     font-weight: 700;

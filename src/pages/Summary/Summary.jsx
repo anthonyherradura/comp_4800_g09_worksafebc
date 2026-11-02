@@ -34,7 +34,9 @@ export default function SummaryPage() {
     if (hazards.length === 0) {
         return (
             <div className="page-content">
-                <h1 className="sm-title">Summary</h1>
+                <div className="sm-head">
+                    <h1 className="sm-title">Summary</h1>
+                </div>
                 <p className="sm-note">Prototype. Hazards are kept on this device until you refresh.</p>
                 <p className="sm-empty">No hazards recorded yet.</p>
                 <Link to="/hazard" className="btn btn-orange sm-primary">
@@ -46,7 +48,9 @@ export default function SummaryPage() {
 
     return (
         <div className="page-content">
-            <h1 className="sm-title">Summary</h1>
+            <div className="sm-head">
+                <h1 className="sm-title">Summary</h1>
+            </div>
             <p className="sm-note">Prototype. Hazards are kept on this device until you refresh.</p>
 
             <dl className="sm-counts">
@@ -57,12 +61,6 @@ export default function SummaryPage() {
                     </div>
                 ))}
             </dl>
-
-            <p className="sm-progress" role="status">
-                {open > 0
-                    ? `${open} hazard${open === 1 ? " still needs" : "s still need"} a photo or to be marked not applicable.`
-                    : "Every hazard has a photo or is marked not applicable."}
-            </p>
 
             {SECTIONS.map((status) => {
                 const list = groups[status];
@@ -85,26 +83,32 @@ export default function SummaryPage() {
                                             {h.comment.trim() && " · comment"}
                                         </span>
                                     </Link>
-                                    {status === HAZARD_STATUS.UNADDRESSED && (
-                                        <button
-                                            type="button"
-                                            className="btn sm-row-action"
-                                            aria-label={`Mark ${h.name} not applicable`}
-                                            onClick={() => updateHazard(h.id, { notApplicable: true })}
-                                        >
-                                            Not applicable
-                                        </button>
-                                    )}
-                                    {status === HAZARD_STATUS.NOT_APPLICABLE && (
-                                        <button
-                                            type="button"
-                                            className="btn sm-row-action"
-                                            aria-label={`Undo not applicable for ${h.name}`}
-                                            onClick={() => updateHazard(h.id, { notApplicable: false })}
-                                        >
-                                            Undo
-                                        </button>
-                                    )}
+                                    <div className="sm-actions">
+                                        {status === HAZARD_STATUS.UNADDRESSED && (
+                                            <button
+                                                type="button"
+                                                className="btn sm-row-action"
+                                                aria-label={`Mark ${h.name} not applicable`}
+                                                onClick={() => updateHazard(h.id, { notApplicable: true })}
+                                            >
+                                                Not applicable
+                                            </button>
+                                        )}
+                                        {status === HAZARD_STATUS.NOT_APPLICABLE && (
+                                            <button
+                                                type="button"
+                                                className="btn sm-row-action"
+                                                aria-label={`Undo not applicable for ${h.name}`}
+                                                onClick={() => updateHazard(h.id, { notApplicable: false })}
+                                            >
+                                                Undo
+                                            </button>
+                                        )}
+                                        {/* Same destination as the name link, so it is skipped by keyboard and screen readers */}
+                                        <Link to={`/hazard/${h.id}`} className="sm-view" tabIndex={-1} aria-hidden="true">
+                                            View ▸
+                                        </Link>
+                                    </div>
                                 </li>
                             ))}
                         </ul>
