@@ -20,7 +20,6 @@ export default function SummaryPage() {
     }, [copyMessage]);
 
     const groups = groupByStatus(hazards);
-    const open = groups[HAZARD_STATUS.UNADDRESSED].length;
 
     const handleCopy = async () => {
         try {
@@ -37,7 +36,7 @@ export default function SummaryPage() {
                 <div className="sm-head">
                     <h1 className="sm-title">Summary</h1>
                 </div>
-                <p className="sm-note">Prototype. Hazards are kept on this device until you refresh.</p>
+                <p className="sm-note">Prototype. Hazards are saved on this device only.</p>
                 <p className="sm-empty">No hazards recorded yet.</p>
                 <Link to="/hazard" className="btn btn-orange sm-primary">
                     Go to hazards
@@ -51,7 +50,7 @@ export default function SummaryPage() {
             <div className="sm-head">
                 <h1 className="sm-title">Summary</h1>
             </div>
-            <p className="sm-note">Prototype. Hazards are kept on this device until you refresh.</p>
+            <p className="sm-note">Prototype. Hazards are saved on this device only.</p>
 
             <dl className="sm-counts">
                 {SECTIONS.map((status) => (

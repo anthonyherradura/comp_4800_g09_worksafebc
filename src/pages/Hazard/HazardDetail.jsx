@@ -19,7 +19,7 @@ export default function HazardDetail() {
     const [tab, setTab] = useState("comment"); // "comment" | "photos"
     const hazard = hazards.find((h) => h.id === id);
 
-    // Happens if the page is refreshed (data only lives in memory for now)
+    // Happens for a deleted hazard or a link to one that isn't saved on this device
     if (!hazard) {
         return (
             <div className="hd-page">
