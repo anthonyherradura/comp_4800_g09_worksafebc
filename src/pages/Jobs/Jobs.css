@@ -1,59 +1,65 @@
-/* Home: job sites. Layout follows the wireframe — add bar on top, saved jobs below. */
+/* Job sites page – WorkSafeBC card style, matching the Hazard and Summary pages.
+   Typography, colours and the --wsbc-* variables come from styles/tokens.css.
+   This file only holds what is unique to the job sites page. */
 
 .jobs-page {
     flex: 1;
     min-height: 0;
     display: flex;
     flex-direction: column;
-    gap: 20px;
-    padding: 26px 20px 20px;
+    gap: 12px;
+    padding: 20px 22px;
     color: var(--wsbc-bodycopy);
 }
 
-.jobs-panel {
-    background: var(--wsbc-silver-grey);
-}
-
+/* Same size and colour as the other page titles */
 .jobs-title {
     margin: 0;
     font-size: 1.75rem;
     line-height: 1.2;
+    font-weight: 700;
+    color: var(--wsbc-orange);
+}
+
+/* Soft grey panel, used by the add bar and the saved list */
+.jobs-panel {
+    padding: 8px;
+    border-radius: 14px;
+    background: var(--wsbc-ash-grey);
 }
 
 /* ---------- Add bar ---------- */
 .jobs-add {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 10px 16px;
+    gap: 8px;
 }
 
 .jobs-input {
     flex: 1;
     min-width: 0;
-    height: 60px;
-    padding: 0 14px;
-    border: none;
-    border-radius: 0;
-    background: var(--wsbc-smoke-grey);
-    color: var(--wsbc-black);
+    height: 44px;
+    padding: 0 12px;
+    border: 1px solid var(--wsbc-steel-grey);
+    border-radius: 10px;
+    background: var(--wsbc-white);
+    color: var(--wsbc-bodycopy);
     font: inherit;
-    font-size: 1.125rem;
 }
 
 .jobs-input::placeholder {
-    color: var(--wsbc-iron-grey);
+    color: var(--wsbc-warm-grey);
 }
 
 .jobs-add-btn {
-    width: 50px;
-    height: 50px;
+    width: 44px;
+    height: 44px;
     flex-shrink: 0;
     display: grid;
     place-items: center;
-    padding: 9px;
+    padding: 10px;
     border: none;
-    border-radius: 4px;
+    border-radius: 10px;
     background: var(--wsbc-orange);
     color: var(--wsbc-white);
     cursor: pointer;
@@ -66,7 +72,7 @@
 }
 
 .jobs-add-btn:disabled {
-    opacity: 0.6;
+    opacity: 0.5;
     cursor: not-allowed;
 }
 
@@ -77,7 +83,6 @@
     display: flex;
     flex-direction: column;
     overflow-y: auto;
-    padding: 28px 16px;
 }
 
 .jobs-list {
@@ -86,36 +91,41 @@
     list-style: none;
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 8px;
 }
 
+/* Each job is one white rounded card; the current job gets an orange outline */
 .jobs-row {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 4px;
+    padding-right: 4px;
+    border: 2px solid transparent;
+    border-radius: 12px;
+    background: var(--wsbc-white);
+}
+
+.jobs-row:has(.jobs-item:hover, .jobs-item.is-current) {
+    border-color: var(--wsbc-orange);
 }
 
 .jobs-item {
+    position: relative;
     flex: 1;
     min-width: 0;
-    min-height: 44px;
+    min-height: 56px;
     display: flex;
     flex-direction: column;
     align-items: stretch;
     justify-content: center;
     gap: 2px;
-    padding: 6px 12px;
-    border: 2px solid transparent;
-    background: var(--wsbc-smoke-grey);
-    color: var(--wsbc-black);
+    padding: 8px 12px;
+    border: none;
+    background: none;
+    color: var(--wsbc-bodycopy);
     font: inherit;
     text-align: left;
     cursor: pointer;
-}
-
-.jobs-item:hover,
-.jobs-item.is-current {
-    border-color: var(--wsbc-orange);
 }
 
 .jobs-label {
@@ -123,18 +133,37 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    font-weight: 700;
 }
 
 .jobs-meta {
-    font-size: 0.75rem;
-    color: var(--wsbc-iron-grey);
+    font-size: 0.8125rem;
+    color: var(--wsbc-warm-grey);
+}
+
+/* "Current" pill, drawn by CSS so the markup doesn't change */
+.jobs-item.is-current .jobs-label {
+    padding-right: 72px;
+}
+
+.jobs-item.is-current::after {
+    content: "Current";
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: var(--wsbc-pale-sunrise-yellow);
+    color: var(--wsbc-bodycopy);
+    font-size: 0.6875rem;
+    font-weight: 700;
 }
 
 .jobs-remove {
     width: 44px;
     height: 44px;
     flex-shrink: 0;
-    padding: 10px;
+    padding: 12px;
     border: none;
     background: none;
     color: var(--wsbc-orange);
@@ -143,8 +172,39 @@
 
 .jobs-empty {
     margin: auto 0;
+    padding: 24px 16px;
+    border-radius: 12px;
+    background: var(--wsbc-white);
     text-align: center;
     color: var(--wsbc-iron-grey);
+}
+
+/* ---------- Optional extras (need small markup additions, see notes) ---------- */
+
+/* Count chip next to the title, same as the Hazard List */
+.jobs-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.jobs-count {
+    min-width: 28px;
+    padding: 2px 10px;
+    border-radius: 12px;
+    background: var(--wsbc-silver-grey);
+    color: var(--wsbc-bodycopy);
+    font-size: 0.875rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+/* Small heading above a group, for example "Saved job sites" */
+.jobs-subtitle {
+    margin: 4px 0 -6px 2px;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--wsbc-bodycopy);
 }
 
 /* ---------- Accessibility ---------- */
@@ -159,8 +219,14 @@
 
 .jobs-input:focus-visible,
 .jobs-add-btn:focus-visible,
-.jobs-item:focus-visible,
 .jobs-remove:focus-visible {
     outline: 3px solid var(--wsbc-black);
     outline-offset: 2px;
+}
+
+/* Inside the card, so the outline isn't clipped */
+.jobs-item:focus-visible {
+    outline: 3px solid var(--wsbc-black);
+    outline-offset: -3px;
+    border-radius: 10px;
 }
