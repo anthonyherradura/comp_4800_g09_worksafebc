@@ -14,6 +14,19 @@ const PlusIcon = () => (
     </svg>
 );
 
+const SearchIcon = () => (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" strokeWidth="2.4" />
+        <path d="m15.5 15.5 5 5" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+    </svg>
+);
+
+// Every word typed must appear in the job's name or address, in any order or case
+const matchesSearch = (label, query) => {
+    const text = label.toLowerCase();
+    return query.toLowerCase().split(/\s+/).filter(Boolean).every((word) => text.includes(word));
+};
+
 const CloseIcon = () => (
     <svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="M5 5l14 14M19 5 5 19" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
@@ -23,7 +36,9 @@ const CloseIcon = () => (
 export default function JobsPage() {
     const { jobs, currentJob, addJob, openJob, deleteJob } = useJobs();
     const [label, setLabel] = useState("");
+    const [search, setSearch] = useState("");
     const navigate = useNavigate();
+    const shown = jobs.filter((job) => matchesSearch(job.label, search));
 
     function handleAdd(e) {
         e.preventDefault();
@@ -72,13 +87,44 @@ export default function JobsPage() {
             <section className="jobs-panel jobs-list-panel" aria-labelledby="jobs-heading">
                 <h2 id="jobs-heading" className="jobs-visually-hidden">Your job sites</h2>
 
+                {jobs.length > 0 && (
+                    <div className="jobs-search" role="search">
+                        <label className="jobs-visually-hidden" htmlFor="job-search">
+                            Search your job sites
+                        </label>
+                        <span className="jobs-search-icon">
+                            <SearchIcon />
+                        </span>
+                        <input
+                            id="job-search"
+                            className="jobs-input jobs-search-input"
+                            type="search"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            placeholder="Search your job sites"
+                            autoComplete="off"
+                            enterKeyHint="search"
+                        />
+                    </div>
+                )}
+
+                {search.trim() && shown.length > 0 && (
+                    <p className="jobs-subtitle jobs-search-count" aria-live="polite">
+                        {shown.length} of {jobs.length} job sites
+                    </p>
+                )}
+
                 {jobs.length === 0 ? (
                     <p className="jobs-empty">
                         No job sites yet. Enter a site name or address above and tap + to create one.
                     </p>
+                ) : shown.length === 0 ? (
+                    <p className="jobs-empty" aria-live="polite">
+                        No job sites match “{search.trim()}”. Type it in the box above and tap + to create it.
+                    </p>
                 ) : (
                     <ul className="jobs-list">
-                        {jobs.map((job) => (
+                        {shown.map((job) => (
                             <li className="jobs-row" key={job.id}>
                                 <button
                                     type="button"

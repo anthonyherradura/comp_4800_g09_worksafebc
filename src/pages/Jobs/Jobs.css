@@ -85,6 +85,42 @@
     overflow-y: auto;
 }
 
+/* Search box at the top of the saved list; stays in view while the list scrolls under it */
+.jobs-search {
+    position: sticky;
+    top: -8px; /* the panel's padding, so it pins flush to the panel's top edge */
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    margin: -8px -8px 8px;
+    padding: 8px;
+    border-radius: 14px 14px 0 0;
+    background: var(--wsbc-ash-grey);
+}
+
+.jobs-search-icon {
+    position: absolute;
+    left: 20px;
+    width: 20px;
+    height: 20px;
+    color: var(--wsbc-warm-grey);
+    pointer-events: none;
+}
+
+.jobs-search-icon svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.jobs-search-input {
+    padding-left: 40px;
+}
+
+.jobs-search-count {
+    margin: 0 0 8px 4px;
+}
+
 .jobs-list {
     margin: 0;
     padding: 0;
