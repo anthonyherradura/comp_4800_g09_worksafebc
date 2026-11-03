@@ -33,15 +33,6 @@ const JobIcon = () => (
     </svg>
 );
 
-const SummaryIcon = () => (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M7 2.5h8l5 5v14H7v-19Z" fill="currentColor" />
-        <path d="M12 12h6M12 15.5h6" stroke="#ED8B00" strokeWidth="1.8" />
-        <path d="M5.5 11 8 8.5l1.8 1.8-2.5 2.5-2.6.8.8-2.6Z" fill="#ED8B00" stroke="currentColor" strokeWidth="1" />
-    </svg>
-);
-
-
 const SignOutIcon = () => (
     <svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="M10 4H5.5A1.5 1.5 0 0 0 4 5.5v13A1.5 1.5 0 0 0 5.5 20H10" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
@@ -53,7 +44,6 @@ const NAV_ITEMS = [
     { to: "/home", label: "Home", Icon: HomeIcon },
     { to: "/planning", label: "Planning", Icon: PlanningIcon },
     { to: "/hazard", label: "Hazards", Icon: HazardIcon },
-    { to: "/summary", label: "Summary", Icon: SummaryIcon },
 ];
 
 // showNav: false for job selection (/jobs), which is its own page outside the regular navigation
