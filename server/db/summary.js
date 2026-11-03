@@ -6,7 +6,7 @@
 // getInspectionSummary loads the data with indexed queries and calls it.
 
 import mongoose from "mongoose";
-import { Inspection, InspectionSheet, SheetSection, SheetChunk, HazardRecord, Photo, AiSuggestion, Summary } from "../models/index.js";
+import { Inspection, InspectionSheet, SheetChunk, HazardRecord, Photo, AiSuggestion, Summary } from "../models/index.js";
 
 export const STATUS = { UNADDRESSED: "unaddressed", REVIEWED: "reviewed", NOT_APPLICABLE: "not_applicable" };
 
@@ -24,8 +24,8 @@ export function hazardOrigin(hazard, acceptedHazardIds) {
 
 /**
  * @param inspection        { _id, revision }
- * @param hazardChunks      every sheet entry in a hazard section of the selected sheets: [{ _id, heading, sheetId }], in sheet order
- * @param otherChunks       sheet entries outside hazard sections that the officer recorded anyway: [{ _id, heading, sheetId }]
+ * @param hazardChunks      every hazard on the selected sheets (sheetChunks with isHazard): [{ _id, heading, sheetId }], in sheet order
+ * @param otherChunks       sheet entries that aren't hazards but that the officer recorded anyway: [{ _id, heading, sheetId }]
  * @param hazards           the inspection's hazardRecords, in creation order
  * @param photoCounts       Map hazardRecordId -> number of photos
  * @param acceptedHazardIds Set of hazardRecordIds created from an accepted AI suggestion
@@ -53,7 +53,7 @@ export function buildSummary({ inspection, hazardChunks, otherChunks = [], hazar
     const lines = [
         // every hazard on the selected sheets, opened or not, so nothing on the sheet can be walked past unseen
         ...hazardChunks.map((chunk) => line(byChunk.get(chunk._id), chunk)),
-        // plus hazards the officer added that aren't in a sheet's hazard section
+        // plus hazards the officer added that aren't one of the sheet's hazards
         ...hazards.filter((h) => !h.sheetChunkId || !covered.has(h.sheetChunkId)).map((h) => line(h, headings.get(h.sheetChunkId))),
     ];
 
@@ -77,9 +77,8 @@ export async function getInspectionSummary(inspectionId, { session = null } = {}
     if (!inspection) return null;
     const id = new mongoose.Types.ObjectId(String(inspectionId));
 
-    const [sheetIds, hazardSectionIds, hazards, latestReview] = await Promise.all([
+    const [sheetIds, hazards, latestReview] = await Promise.all([
         InspectionSheet.find({ inspectionId: id }).session(session).distinct("sheetId"),
-        SheetSection.find({ isHazardSection: true }).session(session).distinct("_id"),
         HazardRecord.find({ inspectionId: id }).sort({ createdAt: 1 }).session(session).lean(),
         Summary.findOne({ inspectionId: id }).sort({ revision: -1 }).session(session).lean(),
     ]);
@@ -87,9 +86,9 @@ export async function getInspectionSummary(inspectionId, { session = null } = {}
     const recordedChunkIds = hazards.map((h) => h.sheetChunkId).filter(Boolean);
 
     const [hazardChunks, otherChunks, photoGroups, accepted] = await Promise.all([
-        SheetChunk.find({ sheetId: { $in: sheetIds }, sheetSectionId: { $in: hazardSectionIds } }, { heading: 1, sheetId: 1 })
+        SheetChunk.find({ sheetId: { $in: sheetIds }, isHazard: true }, { heading: 1, sheetId: 1 })
             .sort({ sheetId: 1, seq: 1 }).session(session).lean(),
-        SheetChunk.find({ _id: { $in: recordedChunkIds }, sheetSectionId: { $nin: hazardSectionIds } }, { heading: 1, sheetId: 1 }).session(session).lean(),
+        SheetChunk.find({ _id: { $in: recordedChunkIds }, isHazard: false }, { heading: 1, sheetId: 1 }).session(session).lean(),
         Photo.aggregate([{ $match: { hazardRecordId: { $in: hazardIds } } }, { $group: { _id: "$hazardRecordId", n: { $sum: 1 } } }]).session(session),
         AiSuggestion.find({ hazardRecordId: { $in: hazardIds }, outcome: "accepted" }).session(session).distinct("hazardRecordId"),
     ]);

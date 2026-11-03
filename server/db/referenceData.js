@@ -3,9 +3,8 @@
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { Sheet, SheetSection, SheetChunk, Regulation, SheetChunkRegulation, ChecklistItem } from "../models/index.js";
-
-// Sections whose entries the officer must account for on the Summary
-export const HAZARD_SECTIONS = ["Industry or Classification Unit Hazards", "Hazards, Controls and Legislation"];
+// The app's own sheet parser, so the database and the app agree on which entries are hazards
+import { sheetHazards } from "../../src/data/sheets/sheetContent.js";
 
 // Matches INITIAL_ITEMS in src/pages/Planning/Planning.jsx
 export const CHECKLIST_ITEMS = [
@@ -52,6 +51,8 @@ export function prepareReferenceData(sheetFiles, existingIds = { sections: new M
             copyright: file.copyright ?? null,
             sourceFile: file.source,
         });
+        // e.g. 40 on Log Transport: 2 of its 42 hazard-section blocks only continue the hazard above them
+        const hazardIds = new Set(sheetHazards(file).map((h) => h.key));
         for (const c of file.chunks) {
             if (!sectionIds.has(c.section)) sectionIds.set(c.section, nextId(sectionIds));
             chunks.push({
@@ -62,6 +63,7 @@ export function prepareReferenceData(sheetFiles, existingIds = { sections: new M
                 heading: c.heading,
                 bodyText: c.text,
                 pageNo: c.page ?? null,
+                isHazard: hazardIds.has(c.id),
             });
             for (const citation of new Set(c.regulations ?? [])) {
                 const reg = parseRegulation(citation);
@@ -71,7 +73,7 @@ export function prepareReferenceData(sheetFiles, existingIds = { sections: new M
             }
         }
     }
-    const sections = [...sectionIds].map(([name, _id]) => ({ _id, name, isHazardSection: HAZARD_SECTIONS.includes(name) }));
+    const sections = [...sectionIds].map(([name, _id]) => ({ _id, name }));
     const regulations = [...regulationIds].map(([key, _id]) => {
         const [instrument, reference] = key.split("|");
         return { _id, instrument, reference };
@@ -90,6 +92,10 @@ export async function loadReferenceData(sheetFiles) {
     const sections = new Map((await SheetSection.find().lean()).map((s) => [s.name, s._id]));
     const regulations = new Map((await Regulation.find().lean()).map((r) => [`${r.instrument}|${r.reference}`, r._id]));
     const data = prepareReferenceData(sheetFiles, { sections, regulations });
+
+    // Databases set up before isHazard existed have isHazardSection on each section; the strict validator would
+    // reject any update that leaves it there. Native driver call, because Mongoose refuses unknown fields.
+    await SheetSection.collection.updateMany({ isHazardSection: { $exists: true } }, { $unset: { isHazardSection: "" } });
 
     await upsertAll(Sheet, data.sheets);
     await upsertAll(SheetSection, data.sections);

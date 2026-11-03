@@ -75,6 +75,8 @@ test("DB-2.2 reference data loaded, and loading again changes nothing", { skip }
     await loadSheets();
     assert.deepEqual(await counts(), first);
     assert.equal((await M.Sheet.findById("cu-766011")).title, "Long-term Care");
+    assert.equal(await M.SheetChunk.countDocuments({ isHazard: true }), 54, "40 on Log Transport + 14 on Long-term Care");
+    assert.equal(await M.SheetSection.countDocuments({ isHazardSection: { $exists: true } }), 0, "old section flag removed");
 });
 
 // ---------- The database rejects bad documents even when Mongoose is bypassed ----------
@@ -153,6 +155,13 @@ test("DB-2.8 Summary: every sheet hazard listed, counts follow photos and not-ap
     s = await getInspectionSummary(inspection._id);
     assert.deepEqual([s.unaddressed, s.reviewed, s.notApplicable, s.photos], [13, 1, 1, 1]);
     await rejectsWith(ops.updateHazard(opened._id, { customName: "Renamed" }), ruleError);
+});
+
+test("DB-2.8b Summary for Log Transport lists the app's 40 hazards, not 42", { skip }, async () => {
+    const { inspection } = await newInspection({ sheet: "cu-732044" });
+    const s = await getInspectionSummary(inspection._id);
+    assert.equal(s.lines.length, 40);
+    assert.ok(!s.lines.some((l) => ["cu-732044-022", "cu-732044-041"].includes(l.sheetChunkId)));
 });
 
 test("DB-2.9 revision goes up once per change, including deletes", { skip }, async () => {

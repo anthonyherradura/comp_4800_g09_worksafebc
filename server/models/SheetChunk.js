@@ -1,7 +1,10 @@
 // sheetChunks: one hazard row or text block from a sheet, copied word for word by scripts/extract_sheets.py.
 // _id keeps the app's id ("cu-766011-003" = sheetId + 3-digit seq). Read-only reference data.
+// isHazard marks the entries that are hazards the officer must account for on the Summary. It is set when the
+// sheets are loaded, by the same parser the app uses (sheetHazards in src/data/sheets/sheetContent.js), so the
+// Summary and the app's hazard list always agree. A block that only continues the hazard above it is not a hazard.
 import mongoose from "mongoose";
-import { schemaOptions, jsonSchema, int, text, nullable } from "./schemaHelpers.js";
+import { schemaOptions, jsonSchema, int, text, nullable, bool } from "./schemaHelpers.js";
 
 const sheetChunkSchema = new mongoose.Schema(
     {
@@ -22,11 +25,12 @@ const sheetChunkSchema = new mongoose.Schema(
         heading: { type: String, required: true },
         bodyText: { type: String, required: true },
         pageNo: { type: Number, min: 1, default: null },
+        isHazard: { type: Boolean, required: true, default: false },
     },
     schemaOptions("sheetChunks"),
 );
 sheetChunkSchema.index({ sheetId: 1, seq: 1 }, { unique: true });
-sheetChunkSchema.index({ sheetId: 1, sheetSectionId: 1 });
+sheetChunkSchema.index({ sheetId: 1, isHazard: 1 });
 sheetChunkSchema.index({ sheetSectionId: 1 });
 
 // "cu-766011" + "-" + seq padded to 3 digits
@@ -41,6 +45,7 @@ export const validator = {
         heading: text(),
         bodyText: text(),
         pageNo: nullable(int(1)),
+        isHazard: bool,
     }),
     $expr: { $eq: ["$_id", { $concat: ["$sheetId", "-", paddedSeq] }] },
 };

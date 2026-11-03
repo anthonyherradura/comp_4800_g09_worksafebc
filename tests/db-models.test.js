@@ -9,7 +9,8 @@ import mongoose from "mongoose";
 import { COLLECTIONS } from "../server/models/index.js";
 import * as M from "../server/models/index.js";
 import { buildSummary, hazardStatus, STATUS } from "../server/db/summary.js";
-import { readSheetFiles, prepareReferenceData, HAZARD_SECTIONS } from "../server/db/referenceData.js";
+import { readSheetFiles, prepareReferenceData } from "../server/db/referenceData.js";
+import { sheetHazards } from "../src/data/sheets/sheetContent.js";
 import { checkValidator, toStored, bsonType } from "./helpers/validatorCheck.js";
 
 const id = () => new mongoose.Types.ObjectId();
@@ -198,7 +199,7 @@ test("DB-1.12 reference data: counts match the PostgreSQL seed", () => {
         { sheets: 2, sections: 21, chunks: 104, regulations: 64, links: 103 },
     );
     assert.deepEqual(ref.sheets.map((s) => s.title).sort(), ["Log Transport", "Long-term Care"], "CU number removed from titles");
-    assert.deepEqual(ref.sections.filter((s) => s.isHazardSection).map((s) => s.name).sort(), [...HAZARD_SECTIONS].sort());
+    assert.equal(ref.chunks.filter((c) => c.isHazard).length, 54, "40 on Log Transport + 14 on Long-term Care");
 });
 
 test("DB-1.13 reference data: every document passes its model and database validator", () => {
@@ -217,8 +218,20 @@ test("DB-1.14 reference data: re-preparing with the stored ids changes nothing (
 
 // ---------- Summary calculation (same cases as the PostgreSQL Summary tests) ----------
 
-const hazardSectionIds = new Set(ref.sections.filter((s) => s.isHazardSection).map((s) => s._id));
-const hazardChunksOf = (sheetId) => ref.chunks.filter((c) => c.sheetId === sheetId && hazardSectionIds.has(c.sheetSectionId));
+const hazardChunksOf = (sheetId) => ref.chunks.filter((c) => c.sheetId === sheetId && c.isHazard);
+
+test("DB-1.22 the database marks exactly the hazards the app lists, on every sheet (Log Transport: 40, not 42)", () => {
+    for (const file of sheetFiles) {
+        const appKeys = sheetHazards(file).map((h) => h.key);
+        assert.deepEqual(hazardChunksOf(file.sheetId).map((c) => c._id), appKeys, file.sheetId);
+    }
+    const lt = ref.chunks.filter((c) => c.sheetId === "cu-732044");
+    for (const continuation of ["cu-732044-022", "cu-732044-041"]) {
+        assert.equal(lt.find((c) => c._id === continuation).isHazard, false, `${continuation} only continues the hazard above it`);
+    }
+    const s = buildSummary({ inspection: { _id: id(), revision: 0 }, hazardChunks: hazardChunksOf("cu-732044"), hazards: [], photoCounts: new Map() });
+    assert.equal(s.lines.length, 40);
+});
 const hazard = (fields) => ({ _id: id(), comment: "", isNotApplicable: false, sheetChunkId: null, customName: null, ...fields });
 
 test("DB-1.15 Summary: a new inspection lists every hazard on the sheet, including ones never opened", () => {
@@ -258,8 +271,8 @@ test("DB-1.18 Summary: origin is derived (sheet / ai / officer) and status follo
     assert.equal(hazardStatus({ isNotApplicable: false }, 1), STATUS.REVIEWED);
 });
 
-test("DB-1.19 Summary: a recorded sheet entry outside a hazard section still appears, under its sheet heading", () => {
-    const outside = ref.chunks.find((c) => c.sheetId === "cu-766011" && !hazardSectionIds.has(c.sheetSectionId));
+test("DB-1.19 Summary: a recorded sheet entry that isn't a hazard still appears, under its sheet heading", () => {
+    const outside = ref.chunks.find((c) => c.sheetId === "cu-766011" && !c.isHazard);
     const h = hazard({ sheetChunkId: outside._id });
     const s = buildSummary({ inspection: { _id: id(), revision: 0 }, hazardChunks: hazardChunksOf("cu-766011"), otherChunks: [outside], hazards: [h], photoCounts: new Map() });
     assert.equal(s.lines.length, 15);
