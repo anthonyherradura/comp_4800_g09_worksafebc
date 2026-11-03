@@ -20,14 +20,14 @@
     background: linear-gradient(to bottom, var(--header-bg) 50%, var(--footer-accent) 50%);
 }
 
-/* ---------- Header: orange, logo left, icon-only sign out ---------- */
+/* ---------- Header: orange, logo left, current job, sign out with icon ---------- */
 .header {
     flex-shrink: 0;
     min-height: calc(52px + env(safe-area-inset-top, 0px));
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: env(safe-area-inset-top, 0px) 16px 0 20px;
+    padding: env(safe-area-inset-top, 0px) 14px 0 16px;
     background: var(--header-bg);
 }
 
@@ -44,7 +44,7 @@
 
 .header-logo {
     display: block;
-    height: 44px;
+    height: 34px;
     width: auto;
 }
 
@@ -56,17 +56,47 @@
     min-width: 0;
     min-height: 44px;
     margin-left: auto;
-    padding: 0 8px;
+    padding: 0 6px;
     color: var(--wsbc-black);
-    font-size: 0.875rem;
-    font-weight: 500;
+    font-size: 0.8125rem;
+    font-weight: 700;
     text-decoration: none;
+}
+
+/* Keep the header text black and the icons grey, whatever the global link colours are
+   (a, a:visited and a:hover rules would otherwise turn the job name blue) */
+.header .job-btn,
+.header .job-btn:visited,
+.header .job-btn:hover,
+.header .job-btn:active,
+.header .signout-btn,
+.header .signout-btn:hover {
+    color: var(--wsbc-black);
+}
+
+.header .job-btn svg,
+.header .signout-btn svg {
+    color: var(--wsbc-iron-grey);
+}
+
+/* Some global rule is colouring the icons blue, probably by setting fill or stroke on svg shapes.
+   Set them on the shapes themselves so the grey wins: the pin is filled, the exit icon is drawn in lines. */
+.header .job-btn svg,
+.header .job-btn svg path {
+    fill: var(--wsbc-iron-grey);
+    stroke: none;
+}
+
+.header .signout-btn svg,
+.header .signout-btn svg path {
+    fill: none;
+    stroke: var(--wsbc-iron-grey);
 }
 
 .job-btn svg {
     flex-shrink: 0;
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
 }
 
 .job-btn-label {
@@ -87,20 +117,27 @@
 }
 
 .signout-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     min-width: 44px;
     height: 44px;
-    padding: 0 8px;
+    padding: 0 6px;
     white-space: nowrap;
     border: none;
     background: none;
     color: var(--wsbc-black);
+    font: inherit;
+    font-size: 0.8125rem;
+    font-weight: 700;
     cursor: pointer;
 }
 
 .signout-btn svg {
     display: block;
-    width: 26px;
-    height: 26px;
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
 }
 
 .signout-btn:focus-visible {
@@ -126,12 +163,14 @@
     margin-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
 }
 
-/* ---------- Footer nav: iron grey, labels, orange current item ---------- */
+/* ---------- Footer nav: iron grey, blue icons with labels, orange current item ---------- */
 .nav {
     flex-shrink: 0;
     display: flex;
     background: var(--nav-bg);
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    /* At least 18px so the iPhone home bar never sits on the labels, even where the browser
+       reports no safe area (it needs viewport-fit=cover in index.html to report one) */
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 18px);
 }
 
 .nav-btn {
@@ -142,27 +181,35 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 3px;
+    gap: 4px;
     padding: 8px 4px;
-    color: var(--wsbc-steel-grey);
-    font-size: 0.6875rem;
-    /* 11px */
-    font-weight: 500;
+    /* icon colour; the label has its own below */
+    color: var(--wsbc-mountain-blue);
     text-decoration: none;
 }
 
 .nav-btn svg {
-    width: 30px;
-    height: 30px;
+    width: 26px;
+    height: 26px;
 }
 
-/* Current page: orange icon + bar, white label (white text passes contrast on iron grey) */
-.nav-btn.active {
-    color: var(--wsbc-white);
+/* Text under the icon */
+.nav-label {
+    color: var(--wsbc-silver-grey);
+    font-size: 0.6875rem;
+    /* 11px */
+    font-weight: 500;
+    line-height: 1.2;
 }
 
+/* Current page: orange icon + bar, bold white label (white text passes contrast on iron grey) */
 .nav-btn.active svg {
     color: var(--wsbc-orange);
+}
+
+.nav-btn.active .nav-label {
+    color: var(--wsbc-white);
+    font-weight: 700;
 }
 
 .nav-btn.active::before {

@@ -42,10 +42,17 @@ const SummaryIcon = () => (
 );
 
 
+const SignOutIcon = () => (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M10 4H5.5A1.5 1.5 0 0 0 4 5.5v13A1.5 1.5 0 0 0 5.5 20H10" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M9 12h11M16 7.5l4.5 4.5-4.5 4.5" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
 const NAV_ITEMS = [
     { to: "/home", label: "Home", Icon: HomeIcon },
     { to: "/planning", label: "Planning", Icon: PlanningIcon },
-    { to: "/hazard", label: "Hazard", Icon: HazardIcon },
+    { to: "/hazard", label: "Hazards", Icon: HazardIcon },
     { to: "/summary", label: "Summary", Icon: SummaryIcon },
 ];
 
@@ -74,6 +81,7 @@ export default function Layout({ showNav = true }) {
                         </Link>
                     )}
                     <button type="button" className="signout-btn" onClick={handleSignOut}>
+                        <SignOutIcon />
                         Sign out
                     </button>
                 </header>
@@ -94,6 +102,7 @@ export default function Layout({ showNav = true }) {
                                 className={({ isActive }) => (isActive ? "nav-btn active" : "nav-btn")}
                             >
                                 <Icon />
+                                <span className="nav-label">{label}</span>
                             </NavLink>
                         ))}
                     </nav>
