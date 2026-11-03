@@ -3,44 +3,105 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useHazards } from "../../context/HazardContext";
 import { STATUS_LABEL, getHazardStatus } from "../../data/hazardStatus";
 import { getSheetHazard } from "../../data/sheets";
-import { BackIcon } from "./HazardIcons";
+import { BackIcon, CameraPlusIcon } from "./HazardIcons";
 import "./Hazard.css";
 
-const PlusIcon = () => (
+const CheckCircleIcon = () => (
     <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M12 4v16M4 12h16" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+        <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="2" />
+        <path
+            d="m8 12.5 2.75 2.75L16.5 9.5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        />
     </svg>
 );
 
-// What the protocol sheet says about a hazard: where it comes up, the controls expected, the law behind it
+const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+
+// The sheet stores legislation as one run of text, e.g.
+// "WCA Section 21, General duties of employers OHSR Section 3.23, Young or new worker orientation ..."
+// Each entry starts with an act name in capitals followed by "Section", so split there, then at the first comma
+// into { reference: "WCA s.21", title: "General duties of employers" }.
+// Also accepts lines or ";" between entries, an array of strings, or an array of { reference, title }.
+const ENTRY_START = /\s+(?=[A-Z]{2,}\s+(?:Section|s\.|Part)\b)/;
+
+// "WCA Section 21" -> "WCA s.21", "OHSR Section 3.23" -> "OHSR 3.23"
+function shortReference(reference) {
+    const match = reference.match(/^([A-Z]{2,})\s+(?:Section|s\.)\s*(.+)$/);
+    if (!match) return reference;
+    return match[1] === "WCA" ? `${match[1]} s.${match[2]}` : `${match[1]} ${match[2]}`;
+}
+
+function parseLegislation(value) {
+    if (!value) return [];
+    const parts = Array.isArray(value) ? value : String(value).split(/\r?\n|;/);
+    return parts
+        .flatMap((part) => (typeof part === "string" ? part.split(ENTRY_START) : [part]))
+        .map((entry) => {
+            if (entry && typeof entry === "object") return entry;
+            const text = String(entry).replace(/^[-•*]\s*/, "").trim();
+            if (!text) return null;
+            const comma = text.indexOf(",");
+            if (comma === -1) return { reference: shortReference(text), title: "" };
+            return {
+                reference: shortReference(text.slice(0, comma).trim()),
+                title: text.slice(comma + 1).trim(),
+            };
+        })
+        .filter(Boolean);
+}
+
+// What the protocol sheet says about a hazard: the controls expected and the law behind them
 function SheetGuidance({ guidance }) {
+    const legislation = parseLegislation(guidance.legislation);
     return (
-        <div className="hd-guidance">
-            {guidance.stage && <p className="hd-guidance-stage">{guidance.stage}</p>}
+        <>
             {guidance.details.length > 0 && (
-                <ul className="hd-guidance-list">
+                <ul className="hd-bullets">
                     {guidance.details.map((d) => (
                         <li key={d}>{d}</li>
                     ))}
                 </ul>
             )}
+
             {guidance.controls.length > 0 && (
-                <>
-                    <h3 className="hd-guidance-heading">Controls that should be in place</h3>
-                    <ul className="hd-guidance-list">
+                <section aria-labelledby="hd-controls-label">
+                    <h2 className="ha-label" id="hd-controls-label">
+                        Controls that should be in place
+                    </h2>
+                    <ul className="hd-controls">
                         {guidance.controls.map((c) => (
-                            <li key={c}>{c}</li>
+                            <li key={c}>
+                                <span className="hd-controls-icon">
+                                    <CheckCircleIcon />
+                                </span>
+                                <span>{c}</span>
+                            </li>
                         ))}
                     </ul>
-                </>
+                </section>
             )}
-            {guidance.legislation && (
-                <>
-                    <h3 className="hd-guidance-heading">Legislation</h3>
-                    <p className="hd-guidance-text">{guidance.legislation}</p>
-                </>
+
+            {legislation.length > 0 && (
+                <section aria-labelledby="hd-law-label">
+                    <h2 className="ha-label" id="hd-law-label">
+                        Legislation
+                    </h2>
+                    <ul className="hd-law-list">
+                        {legislation.map((law) => (
+                            <li key={`${law.reference}-${law.title}`} className="hd-law">
+                                <span className="hd-law-ref">{law.reference}</span>
+                                {law.title && <span className="hd-law-title">{law.title}</span>}
+                            </li>
+                        ))}
+                    </ul>
+                </section>
             )}
-        </div>
+        </>
     );
 }
 
@@ -59,14 +120,15 @@ export default function HazardDetail() {
             <div className="hd-page">
                 <p className="hz-empty">Hazard not found.</p>
                 <Link to="/hazard" className="hd-back">
-                    <BackIcon /> Back
+                    <BackIcon /> Hazards
                 </Link>
             </div>
         );
     }
 
-    const created = new Date(hazard.createdAt);
     const count = hazard.photos.length;
+    const statusKey = getHazardStatus(hazard);
+    const page = hazard.page ?? guidance?.page; // shown only if the sheet data has a page number
 
     const handleAddPhotos = (e) => {
         const files = Array.from(e.target.files || []);
@@ -84,34 +146,23 @@ export default function HazardDetail() {
 
     return (
         <div className="hd-page">
-            <div className="hd-top">
-                <h2 className="hd-title">Hazard details</h2>
-                <Link to="/hazard" className="hd-back">
-                    <BackIcon /> Back
-                </Link>
-            </div>
+            <Link to="/hazard" className="hd-back">
+                <BackIcon /> Hazards
+            </Link>
 
-            <div className="hd-panel">
-                <div className="hd-summary">
-                    <div className="hd-head">
-                        <span className="hd-name">{hazard.name}</span>
-                        <span className="hd-status" role="status">
-                            {STATUS_LABEL[getHazardStatus(hazard)]}
-                        </span>
-                    </div>
-
-                    {/* Three small rectangular tiles. The third is left blank for now */}
-                    <div className="hd-tiles">
-                        <span className="hd-tile">
-                            {created.toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-                        </span>
-                        <span className="hd-tile">
-                            {count} photo{count === 1 ? "" : "s"}
-                        </span>
-                        <span className="hd-tile">{hazard.source === "sheet" ? "From sheet" : "Added by you"}</span>
-                    </div>
+            <header className="hd-head">
+                {guidance?.stage && <p className="hd-kicker">{guidance.stage}</p>}
+                <h1 className="hd-name">{hazard.name}</h1>
+                <div className="hd-meta">
+                    <span className={`hd-status hd-status--${statusKey}`} role="status">
+                        {STATUS_LABEL[statusKey]}
+                    </span>
+                    <span className="hd-meta-text">
+                        {page ? `Page ${page} · ` : ""}
+                        {plural(count, "photo")}
+                    </span>
                 </div>
-            </div>
+            </header>
 
             <div className="hd-tabs" role="tablist" aria-label="Hazard details">
                 {guidance && (
@@ -152,11 +203,11 @@ export default function HazardDetail() {
             </div>
 
             {tab === "guidance" && guidance ? (
-                <div role="tabpanel" id="hd-panel-guidance" aria-labelledby="hd-tab-guidance">
+                <div role="tabpanel" id="hd-panel-guidance" aria-labelledby="hd-tab-guidance" className="hd-body">
                     <SheetGuidance guidance={guidance} />
                 </div>
             ) : tab === "comment" ? (
-                <div role="tabpanel" id="hd-panel-comment" aria-labelledby="hd-tab-comment">
+                <div role="tabpanel" id="hd-panel-comment" aria-labelledby="hd-tab-comment" className="hd-body">
                     <textarea
                         className="hd-textarea"
                         placeholder="Add a comment"
@@ -166,20 +217,7 @@ export default function HazardDetail() {
                     />
                 </div>
             ) : (
-                <div role="tabpanel" id="hd-panel-photos" aria-labelledby="hd-tab-photos" className="hd-photos">
-                    <label className="hd-add">
-                        <PlusIcon />
-                        Add photos
-                        <input
-                            className="hz-visually-hidden"
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            aria-label="Add photos"
-                            onChange={handleAddPhotos}
-                        />
-                    </label>
-
+                <div role="tabpanel" id="hd-panel-photos" aria-labelledby="hd-tab-photos" className="hd-body">
                     {count === 0 ? (
                         <p className="hd-gallery-empty">No photos yet</p>
                     ) : (
@@ -193,18 +231,32 @@ export default function HazardDetail() {
             )}
 
             <div className="hd-actions">
+                {/* Photos are added from here on every tab */}
+                <label className="btn btn-orange hd-add">
+                    <CameraPlusIcon />
+                    Add photo
+                    <input
+                        className="hz-visually-hidden"
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        aria-label="Add photos"
+                        onChange={handleAddPhotos}
+                    />
+                </label>
                 <button
                     type="button"
                     className="btn hd-na"
                     aria-pressed={Boolean(hazard.notApplicable)}
                     onClick={() => updateHazard(id, { notApplicable: !hazard.notApplicable })}
                 >
-                    {hazard.notApplicable ? "Mark as applicable" : "Mark not applicable"}
-                </button>
-                <button type="button" className="btn hd-delete" onClick={handleDelete}>
-                    Delete
+                    {hazard.notApplicable ? "Mark as applicable" : "Not applicable"}
                 </button>
             </div>
+
+            <button type="button" className="hd-delete" onClick={handleDelete}>
+                Delete hazard
+            </button>
         </div>
     );
 }

@@ -546,17 +546,43 @@
    Page 3: hazard details
    ========================================================== */
 
-/* 44px tap target without making the title row taller than the other pages' */
+/* Same look as the Add hazard page: one body font (tokens.css would otherwise swap in the
+   heading font on h1/h2), dark text, no grey panels. Labels reuse .ha-label from page 2. */
+.hd-page {
+    gap: 12px;
+    color: var(--wsbc-bodycopy);
+}
+
+.hd-page,
+.hd-page h1,
+.hd-page h2,
+.hd-page label,
+.hd-page button,
+.hd-page textarea {
+    font-family: var(--font-body);
+    letter-spacing: normal;
+}
+
+/* "< Hazards" link at the top. 44px tap target without adding visible height */
 .hd-back {
     display: inline-flex;
     align-items: center;
+    align-self: flex-start;
     gap: 4px;
     min-height: 44px;
-    margin: -8px -8px -8px 0;
+    margin: -6px 0 -6px -8px;
     padding: 0 8px;
     color: var(--wsbc-bodycopy);
+    font-size: 0.875rem;
     font-weight: 700;
     text-decoration: none;
+}
+
+/* Keep the link dark, whatever the global link colours are */
+.hd-page a.hd-back,
+.hd-page a.hd-back:visited,
+.hd-page a.hd-back:hover {
+    color: var(--wsbc-bodycopy);
 }
 
 .hd-back svg {
@@ -564,152 +590,207 @@
     height: 16px;
 }
 
-.hd-summary {
-    padding: 12px 14px;
-}
-
+/* ---------- Title block ---------- */
 .hd-head {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    margin: 0;
+}
+
+/* Where on the sheet it comes up, e.g. SITE PREP – DRIVER ORIENTATION */
+.hd-kicker {
+    margin: 0;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--wsbc-warm-grey);
 }
 
 .hd-name {
-    min-width: 0;
-    font-size: 1.0625rem;
+    margin: 0;
+    font-size: 1.25rem;
+    line-height: 1.3;
     font-weight: 700;
+    color: var(--wsbc-bodycopy);
     overflow-wrap: anywhere;
 }
 
+.hd-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+}
+
+.hd-meta-text {
+    font-size: 0.8125rem;
+    color: var(--wsbc-warm-grey);
+}
+
+/* Status pill: green by default, yellow with an orange dot while unaddressed */
 .hd-status {
-    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     padding: 2px 10px;
-    border-radius: 12px;
+    border: 1px solid var(--wsbc-moss-green);
+    border-radius: 999px;
     background: var(--wsbc-pale-moss-green);
     color: var(--wsbc-bodycopy);
     font-size: 0.8125rem;
     font-weight: 700;
 }
 
-/* Three small, wide tiles. The third is blank for now */
-.hd-tiles {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
-    margin-top: 10px;
+.hd-status::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--wsbc-moss-green);
 }
 
-.hd-tile {
+.hd-status--unaddressed {
+    border-color: var(--wsbc-orange);
+    background: var(--wsbc-pale-sunrise-yellow);
+}
+
+.hd-status--unaddressed::before {
+    background: var(--wsbc-orange);
+}
+
+/* ---------- Tabs: Guidance / Comment / Photos ---------- */
+.hd-tabs {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 32px;
-    padding: 0 6px;
+    gap: 4px;
+    padding: 4px;
     border-radius: 8px;
     background: var(--wsbc-ash-grey);
+}
+
+.hd-tab {
+    flex: 1;
+    min-width: 0;
+    min-height: 40px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: none;
+    color: var(--wsbc-warm-grey);
+    font: inherit;
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+
+.hd-tab[aria-selected="true"] {
+    border-color: var(--wsbc-silver-grey);
+    background: var(--wsbc-white);
+    color: var(--wsbc-bodycopy);
+    font-weight: 700;
+}
+
+/* ---------- Tab content ---------- */
+.hd-body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.hd-bullets {
+    margin: 0;
+    padding-left: 20px;
+    font-size: 0.9375rem;
+    line-height: 1.45;
+}
+
+.hd-bullets li+li {
+    margin-top: 4px;
+}
+
+/* Controls: a green tick beside each one */
+.hd-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.hd-controls li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 0.9375rem;
+    line-height: 1.45;
+}
+
+.hd-controls-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    margin-top: 1px;
+    color: var(--wsbc-moss-green);
+}
+
+.hd-controls-icon svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* Legislation: a blue reference tag, then what it covers.
+   One grid for the whole list: the tag column is as wide as the longest tag (so nothing overlaps)
+   and every title starts at the same left edge. Each <li> just passes its two cells to the grid. */
+.hd-law-list {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    align-items: start;
+    gap: 10px 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.hd-law {
+    display: contents;
+    font-size: 0.875rem;
+    line-height: 1.45;
+}
+
+.hd-law-ref {
+    justify-self: start;
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: var(--wsbc-pale-mountain-blue);
+    color: var(--wsbc-bodycopy);
     font-size: 0.8125rem;
     font-weight: 700;
     white-space: nowrap;
 }
 
-.hd-tile--blank {
-    background: var(--wsbc-white);
-    border: 1.5px dashed var(--wsbc-steel-grey);
+.hd-law-title {
+    padding-top: 2px;
 }
 
-/* Comment / Photos switch */
-.hd-tabs {
-    display: flex;
-    padding: 3px;
-    border-radius: 12px;
-    background: var(--wsbc-silver-grey);
-}
-
-.hd-tab {
-    flex: 1;
-    min-height: 40px;
-    border: none;
-    border-radius: 9px;
-    background: none;
-    color: var(--wsbc-iron-grey);
-    font: inherit;
-    cursor: pointer;
-}
-
-.hd-tab[aria-selected="true"] {
-    background: var(--wsbc-white);
-    color: var(--wsbc-bodycopy);
-    font-weight: 700;
-}
-
+/* Comment box, same field style as the Add hazard page */
 .hd-textarea {
+    display: block;
     width: 100%;
     min-height: 140px;
     padding: 10px 12px;
+    border: 1px solid var(--wsbc-steel-grey);
+    border-radius: 6px;
+    background: var(--wsbc-white);
+    color: var(--wsbc-bodycopy);
+    font-size: 0.9375rem;
+    line-height: 1.4;
     resize: vertical;
 }
 
-/* Guidance tab: what the protocol sheet says about this hazard */
-.hd-guidance {
-    padding: 12px 14px;
-    border-radius: 12px;
-    background: var(--wsbc-ash-grey);
-    color: var(--wsbc-bodycopy);
-}
-
-.hd-guidance-stage {
-    margin: 0 0 8px;
-    font-size: 0.875rem;
-    font-weight: 700;
+.hd-textarea::placeholder {
     color: var(--wsbc-warm-grey);
-}
-
-.hd-guidance-heading {
-    margin: 14px 0 6px;
-    font-size: 0.9375rem;
-    font-weight: 700;
-    color: var(--wsbc-bodycopy);
-}
-
-.hd-guidance-list {
-    margin: 0;
-    padding-left: 20px;
-}
-
-.hd-guidance-list li+li {
-    margin-top: 4px;
-}
-
-.hd-guidance-text {
-    margin: 0;
-    font-size: 0.9375rem;
-    overflow-wrap: anywhere;
-}
-
-.hd-photos {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.hd-add {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    min-height: 44px;
-    border: 2px solid var(--wsbc-orange);
-    border-radius: 10px;
-    color: var(--wsbc-bodycopy);
-    font-weight: 700;
-    cursor: pointer;
-}
-
-.hd-add svg {
-    width: 18px;
-    height: 18px;
-    color: var(--wsbc-orange);
 }
 
 .hd-gallery {
@@ -732,31 +813,84 @@
     color: var(--wsbc-warm-grey);
 }
 
-/* Not applicable / Delete */
+/* ---------- Actions: Add photo / Not applicable ---------- */
 .hd-actions {
     display: flex;
     gap: 10px;
     margin-top: auto;
+    padding-top: 14px;
+    border-top: 1px solid var(--wsbc-silver-grey);
 }
 
+/* Both buttons get the same fixed size, border and text, even though one is a label and one a button */
 .hd-actions .btn {
+    box-sizing: border-box;
     flex: 1;
+    height: 48px;
+    min-height: 0;
+    margin: 0;
+    padding: 0 10px;
+    gap: 8px;
+    border-width: 2px;
+    border-style: solid;
+    border-radius: 6px;
+    font-family: var(--font-body);
+    font-size: 0.9375rem;
+    font-weight: 700;
+    line-height: 1.2;
+    text-transform: none;
 }
 
+/* Add photo is a label around the hidden file input */
+.hd-add {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-color: var(--wsbc-orange);
+    color: var(--wsbc-black);
+    /* white on orange is only 2.4:1 */
+    cursor: pointer;
+}
+
+.hd-add svg {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
+/* Not applicable: white with a grey outline; dark when switched on */
 .hd-na {
-    background: var(--wsbc-silver-grey);
-    border-color: var(--wsbc-silver-grey);
+    border-color: var(--wsbc-steel-grey);
+    background: var(--wsbc-white);
     color: var(--wsbc-bodycopy);
 }
 
 .hd-na[aria-pressed="true"] {
-    background: var(--wsbc-iron-grey);
     border-color: var(--wsbc-iron-grey);
+    background: var(--wsbc-iron-grey);
     color: var(--wsbc-white);
 }
 
+/* Quiet red text button under the actions */
 .hd-delete {
-    background: var(--wsbc-white);
-    border-color: var(--wsbc-huckleberry-red);
+    align-self: center;
+    min-height: 44px;
+    padding: 0 12px;
+    border: none;
+    background: none;
     color: var(--wsbc-huckleberry-red);
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 700;
+    text-decoration: underline;
+    text-transform: none;
+    cursor: pointer;
+}
+
+.hd-add:focus-within,
+.hd-na:focus-visible,
+.hd-tab:focus-visible,
+.hd-delete:focus-visible {
+    outline: 3px solid var(--wsbc-black);
+    outline-offset: 2px;
 }
