@@ -145,90 +145,316 @@
 }
 
 /* ==========================================================
-   Page 1: hazard list
+   Page 1: hazard list (the old Summary page lives here now)
    ========================================================== */
-.hl-count {
-    min-width: 28px;
-    padding: 2px 10px;
-    border-radius: 12px;
-    background: var(--wsbc-silver-grey);
+
+/* Same look as the other hazard pages: one body font (tokens.css would otherwise swap in the
+   heading font on h1/h2), dark title, no grey panels. The whole page scrolls. */
+.hl-page {
+    gap: 12px;
+    overflow-y: auto;
     color: var(--wsbc-bodycopy);
-    font-size: 0.875rem;
-    font-weight: 700;
-    text-align: center;
 }
 
-.hl-add {
-    width: 100%;
+.hl-page,
+.hl-page h1,
+.hl-page h2,
+.hl-page button,
+.hl-page input {
+    font-family: var(--font-body);
+    letter-spacing: normal;
+}
+
+.hl-title {
+    margin: 0;
+    color: var(--wsbc-bodycopy);
+}
+
+/* ---------- Status tabs: Unaddressed / Reviewed / Not applicable ---------- */
+.hl-tabs {
+    display: flex;
     gap: 6px;
-    text-decoration: none;
 }
 
-.hl-add svg {
+.hl-tab {
+    flex: 1;
+    min-width: 0;
+    min-height: 56px;
+    padding: 8px 8px 8px 10px;
+    border: none;
+    border-left: 4px solid;
+    border-radius: 8px;
+    color: var(--wsbc-bodycopy);
+    text-align: left;
+    cursor: pointer;
+}
+
+.hl-tab-count {
+    display: block;
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+.hl-tab-label {
+    display: block;
+    font-size: 0.75rem;
+    line-height: 1.2;
+}
+
+.hl-tab--todo {
+    background: var(--wsbc-pale-sunrise-yellow);
+    border-left-color: var(--wsbc-sunset-orange);
+}
+
+.hl-tab--done {
+    background: var(--wsbc-pale-moss-green);
+    border-left-color: var(--wsbc-moss-green);
+}
+
+.hl-tab--na {
+    background: var(--wsbc-ash-grey);
+    border-left-color: var(--wsbc-warm-grey);
+}
+
+/* The open tab gets a dark outline */
+.hl-tab[aria-selected="true"] {
+    box-shadow: inset 0 0 0 2px var(--wsbc-bodycopy);
+}
+
+/* ---------- Search and Add hazard ---------- */
+.hl-tools {
+    display: flex;
+    gap: 8px;
+}
+
+.hl-tool {
+    box-sizing: border-box;
+    flex: 1;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 10px;
+    border: 2px solid var(--wsbc-orange);
+    border-radius: 6px;
+    background: var(--wsbc-white);
+    color: var(--wsbc-black);
+    font-size: 0.9375rem;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.hl-tool svg {
     width: 18px;
     height: 18px;
+    flex-shrink: 0;
 }
 
-/* The panel scrolls; the title and Add button stay put */
-.hl-panel {
-    flex: 1;
-    min-height: 0;
+.hl-tool--primary {
+    background: var(--wsbc-orange);
+    color: var(--wsbc-black);
+    /* white on orange is only 2.4:1 */
+}
+
+/* Keep the link text black, whatever the global link colours are */
+.hl-page a.hl-tool,
+.hl-page a.hl-tool:visited {
+    color: var(--wsbc-black);
+}
+
+.hl-tool:not(.hl-tool--primary):hover {
+    background: var(--wsbc-pale-sunrise-yellow);
+}
+
+/* ---------- The list under the open tab ---------- */
+.hl-heading {
+    margin: 4px 0 2px;
+    font-size: 1.0625rem;
+    font-weight: 700;
+    color: var(--wsbc-bodycopy);
+}
+
+.hl-list {
     margin: 0;
+    padding: 0;
     list-style: none;
-    overflow-y: auto;
 }
 
-/* The whole card is the link */
-.hl-card {
-    display: block;
-    padding: 12px 14px;
+/* Rows sit a little in from the heading, with a dotted divider between them */
+.hl-row {
+    padding: 10px 0 10px 12px;
+    border-bottom: 1px dotted var(--wsbc-smoke-grey);
+}
+
+.hl-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
     color: var(--wsbc-bodycopy);
     text-decoration: none;
+}
+
+.hl-page a.hl-link,
+.hl-page a.hl-link:visited {
+    color: var(--wsbc-bodycopy);
+}
+
+.hl-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
 }
 
 .hl-name {
-    display: block;
     font-weight: 700;
     overflow-wrap: anywhere;
 }
 
 .hl-meta {
-    display: block;
-    margin-top: 2px;
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     color: var(--wsbc-warm-grey);
 }
 
-.hl-divider {
-    display: block;
-    margin: 10px 0 8px;
-    border-top: 1px dotted var(--wsbc-smoke-grey);
+.hl-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
+    padding: 1px 10px;
+    border: 1px solid;
+    border-radius: 999px;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--wsbc-bodycopy);
 }
 
-.hl-view {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 6px;
-    font-size: 0.875rem;
-    font-weight: 700;
-    color: var(--wsbc-mountain-blue);
+.hl-pill::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.hl-pill--todo {
+    border-color: var(--wsbc-sunset-orange);
+    background: var(--wsbc-pale-sunrise-yellow);
+}
+
+.hl-pill--todo::before {
+    color: var(--wsbc-sunset-orange);
+}
+
+.hl-pill--done {
+    border-color: var(--wsbc-moss-green);
+    background: var(--wsbc-pale-moss-green);
+}
+
+.hl-pill--done::before {
+    color: var(--wsbc-moss-green);
+}
+
+.hl-pill--na {
+    border-color: var(--wsbc-warm-grey);
+    background: var(--wsbc-ash-grey);
+}
+
+.hl-pill--na::before {
+    color: var(--wsbc-warm-grey);
 }
 
 .hl-arrow {
     width: 0;
     height: 0;
+    flex-shrink: 0;
     border-top: 5px solid transparent;
     border-bottom: 5px solid transparent;
     border-left: 7px solid var(--wsbc-mountain-blue);
 }
 
-.hl-empty {
-    padding: 24px 16px;
-    border-radius: 12px;
+/* Not applicable / Undo, under the row */
+.hl-row-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 6px;
+}
+
+.hl-row-action {
+    min-height: 40px;
+    padding: 0 14px;
+    border: 1px solid var(--wsbc-steel-grey);
+    border-radius: 6px;
     background: var(--wsbc-white);
+    color: var(--wsbc-bodycopy);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.hl-none,
+.hl-empty {
+    margin: 0;
+    padding: 20px 4px;
     color: var(--wsbc-iron-grey);
     text-align: center;
+}
+
+/* ---------- Copy findings ---------- */
+.hl-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: auto;
+    padding-top: 6px;
+}
+
+.hl-copy {
+    box-sizing: border-box;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: none;
+    border-radius: 6px;
+    background: var(--wsbc-silver-grey);
+    color: var(--wsbc-bodycopy);
+    font-size: 0.9375rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.hl-copy svg {
+    width: 18px;
+    height: 18px;
+}
+
+.hl-hint {
+    margin: 0;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    color: var(--wsbc-warm-grey);
+    text-align: center;
+}
+
+.hl-hint--result {
+    color: var(--wsbc-bodycopy);
+    font-weight: 700;
+}
+
+.hl-tab:focus-visible,
+.hl-tool:focus-visible,
+.hl-link:focus-visible,
+.hl-row-action:focus-visible,
+.hl-copy:focus-visible {
+    outline: 3px solid var(--wsbc-black);
+    outline-offset: 2px;
 }
 
 /* ==========================================================
