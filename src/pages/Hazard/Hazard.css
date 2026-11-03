@@ -464,6 +464,42 @@
     }
 }
 
+/* Phase 4: the request failed. Red outline, red heading, and a Try again button */
+.ha-suggest--error {
+    border-color: var(--wsbc-huckleberry-red);
+    background: var(--wsbc-white);
+}
+
+.ha-suggest--error .ha-suggest-heading {
+    color: var(--wsbc-huckleberry-red);
+}
+
+.ha-suggest--error .ha-suggest-text {
+    margin-bottom: 12px;
+}
+
+.ha-retry {
+    min-height: 44px;
+    padding: 0 18px;
+    border: 2px solid var(--wsbc-orange);
+    border-radius: 6px;
+    background: var(--wsbc-white);
+    color: var(--wsbc-black);
+    font-family: var(--font-body);
+    font-size: 0.9375rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.ha-retry:hover:not(:disabled) {
+    background: var(--wsbc-pale-sunrise-yellow);
+}
+
+.ha-retry:focus-visible {
+    outline: 3px solid var(--wsbc-black);
+    outline-offset: 2px;
+}
+
 /* The suggested name, which can be edited before Accept */
 .ha-suggest-input {
     display: block;

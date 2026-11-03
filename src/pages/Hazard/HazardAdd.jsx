@@ -26,6 +26,14 @@ const InfoIcon = () => (
     </svg>
 );
 
+const WarningIcon = () => (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="2" />
+        <path d="M12 7.5v5.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        <circle cx="12" cy="16.25" r="1.25" fill="currentColor" />
+    </svg>
+);
+
 // Page 2: add a photo, a description, or both, ask the AI for a suggested hazard, then Accept.
 // The button and the suggestion box have three phases: waiting for input, getting a suggestion, suggestion ready.
 export default function HazardAdd() {
@@ -41,7 +49,7 @@ export default function HazardAdd() {
 
     const hasInput = Boolean(prompt.trim() || photoFile);
     const canSend = hasInput && !suggesting;
-    const phase = suggesting ? "loading" : suggested ? "ready" : "idle";
+    const phase = suggesting ? "loading" : error ? "error" : suggested ? "ready" : "idle";
 
     const resetSuggestion = () => {
         setSuggestion("");
@@ -180,10 +188,8 @@ export default function HazardAdd() {
 
             <section className={`ha-suggest ha-suggest--${phase}`} aria-labelledby="ha-suggest-label" aria-live="polite">
                 <h2 className="ha-suggest-heading" id="ha-suggest-label">
-                    <span className="ha-suggest-icon">
-                        <InfoIcon />
-                    </span>
-                    Suggested hazard
+                    <span className="ha-suggest-icon">{phase === "error" ? <WarningIcon /> : <InfoIcon />}</span>
+                    {phase === "error" ? "No suggestion this time" : "Suggested hazard"}
                 </h2>
 
                 {phase === "idle" && (
@@ -220,13 +226,18 @@ export default function HazardAdd() {
                         <p className="ha-suggest-text">Edit the name if needed, then Accept.</p>
                     </>
                 )}
-            </section>
 
-            {error && (
-                <p role="alert" className="hz-error">
-                    {error}
-                </p>
-            )}
+                {phase === "error" && (
+                    <>
+                        <p className="ha-suggest-text" role="alert">
+                            {error}
+                        </p>
+                        <button type="button" className="ha-retry" disabled={!canSend} onClick={handleSend}>
+                            Try again
+                        </button>
+                    </>
+                )}
+            </section>
 
             <div className="ha-actions">
                 <button type="submit" className="btn btn-orange" disabled={!suggestion.trim() || suggesting}>

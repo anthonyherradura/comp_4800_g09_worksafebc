@@ -71,9 +71,13 @@
     font-size: 0.9375rem;
 }
 
+/* Reset everything a global h2 rule might add, so the row below can centre its content exactly */
 .planning-group-heading {
+    display: block;
     margin: 0;
+    padding: 0;
     font-size: inherit;
+    line-height: 1;
     color: inherit;
 }
 
@@ -81,16 +85,26 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    box-sizing: border-box;
     width: 100%;
-    min-height: 52px;
-    padding: 8px 14px;
+    height: 56px;
+    margin: 0;
+    padding: 0 14px;
     border: none;
     border-radius: 12px;
     background: none;
     color: var(--wsbc-bodycopy);
     font: inherit;
+    line-height: 1.2;
     text-align: left;
     cursor: pointer;
+}
+
+/* Name, count and arrow all sit on the row's centre line */
+.planning-group-toggle>* {
+    margin: 0;
+    padding: 0;
+    align-self: center;
 }
 
 .planning-group-name {
@@ -98,15 +112,20 @@
     min-width: 0;
     font-size: 1.0625rem;
     font-weight: 700;
+    line-height: 1.2;
 }
 
 .planning-group-count {
     font-size: 0.8125rem;
     font-weight: 700;
+    line-height: 1.2;
     color: var(--wsbc-warm-grey);
 }
 
 .planning-chevron {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     width: 18px;
     height: 18px;
     flex-shrink: 0;
