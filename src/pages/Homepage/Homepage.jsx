@@ -1,16 +1,19 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useHazards } from "../../context/HazardContext";
 import { useJobs } from "../../context/JobContext";
 import { SHEET_CATALOG, getSheetChecklist, getSheetHazards } from "../../data/sheets";
 import { matchesWords } from "../../data/sheets/catalog";
 import { shrinkImage } from "../../data/store";
+import usePersistentState from "../../hooks/usePersistentState";
 import { CameraPlusIcon } from "../Hazard/HazardIcons";
 import { matchSheets } from "./matchSheets";
 import "./Homepage.css";
 
 const byId = Object.fromEntries(SHEET_CATALOG.map((s) => [s.sheetId, s]));
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+const MAX_RECENT = 3;
+const DEFAULT_RECENT = SHEET_CATALOG.slice(0, 2).map((s) => s.sheetId);
 
 const CheckIcon = () => (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -79,19 +82,39 @@ export default function HomePage() {
     const { applySheet } = useHazards();
     const [query, setQuery] = useState("");
     const [ai, setAi] = useState({ status: "idle" }); // idle | loading | done | error
+    // Sheet ids, most recently viewed first. Saved on the device.
+    const [recentIds, setRecentIds, recentLoaded] = usePersistentState("hiips360.recentSheets", []);
     const selected = byId[currentJob?.sheetId] ?? null;
 
+    const q = query.trim();
+    const searching = q !== "";
     const aiMatches = ai.status === "done" ? ai.matches.filter((m) => byId[m.sheetId]) : [];
     const filtered = SHEET_CATALOG.filter((s) => matchesWords(s, query));
-    // A description usually matches no sheet name. Once the AI has answered, list every sheet instead of none.
-    const showAll = !query.trim() || (filtered.length === 0 && ai.status !== "idle");
-    const listed = showAll ? SHEET_CATALOG : filtered;
+    // Sheets the user picked come first; the defaults fill any slots left over.
+    const recentSheets = !recentLoaded
+        ? []
+        : [...new Set([...recentIds, ...DEFAULT_RECENT])]
+            .map((id) => byId[id])
+            .filter(Boolean)
+            .slice(0, MAX_RECENT);    // Typing searches the whole catalog. With nothing typed, show what was viewed recently.
+    const listed = searching ? filtered : recentSheets;
+
+    function remember(sheetId) {
+        setRecentIds((prev) => [sheetId, ...prev.filter((id) => id !== sheetId)].slice(0, MAX_RECENT));
+    }
+
+    // A job that already has a sheet counts as viewed, so the list is not empty for it.
+    const selectedId = selected?.sheetId;
+    useEffect(() => {
+        if (recentLoaded && selectedId && !recentIds.includes(selectedId)) remember(selectedId);
+    }, [recentLoaded, selectedId]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Picking a sheet fills the job's hazard list from it (and the Planning checklist reads it too)
     function pick(sheetId) {
         const next = sheetId === selected?.sheetId ? null : sheetId;
         setJobSheet(currentJob.id, next);
         applySheet(currentJob.id, next);
+        if (next) remember(next);
     }
 
     async function ask({ text, photoFile }) {
@@ -250,16 +273,20 @@ export default function HomePage() {
                 </section>
             )}
 
-            <section aria-labelledby="all-heading">
-                <h2 id="all-heading" className="home-section-heading">
-                    {showAll
-                        ? `All protocol sheets (${SHEET_CATALOG.length})`
-                        : `${filtered.length} of ${SHEET_CATALOG.length} sheets match “${query.trim()}”`}
+            <section aria-labelledby="sheets-heading">
+                <h2 id="sheets-heading" className="home-section-heading">
+                    {searching
+                        ? `${filtered.length} of ${SHEET_CATALOG.length} sheets match “${q}”`
+                        : `Recently viewed${recentSheets.length ? ` (${recentSheets.length})` : ""}`}
                 </h2>
                 {listed.length === 0 ? (
-                    <p className="home-box home-panel-note">
-                        No sheet names match. Tap Ask AI to search by what the work is.
-                    </p>
+                    (searching || recentLoaded) && (
+                        <p className="home-box home-panel-note">
+                            {searching
+                                ? "No sheet names match. Tap Ask AI to search by what the work is."
+                                : "No protocol sheets found."}
+                        </p>
+                    )
                 ) : (
                     <ul className="home-panel">
                         {listed.map((s) => (
