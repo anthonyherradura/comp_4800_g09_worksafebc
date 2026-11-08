@@ -35,18 +35,21 @@ const WarningIcon = () => (
 );
 
 // Page 2: add a photo, a description, or both, ask the AI for a suggested hazard, then Accept.
+// If it is the same as a hazard already on the job, Accept adds to that hazard instead of creating one.
 // The button and the suggestion box have three phases: waiting for input, getting a suggestion, suggestion ready.
 export default function HazardAdd() {
-    const { addHazard } = useHazards();
+    const { hazards, addHazard, addPhotos, updateHazard } = useHazards();
     const navigate = useNavigate();
     const [prompt, setPrompt] = useState("");
     const [photoFile, setPhotoFile] = useState(null); // sent to the AI
     const [photo, setPhoto] = useState(null); // preview URL, also saved with the hazard
     const [suggestion, setSuggestion] = useState(""); // editable once the AI has answered
     const [suggested, setSuggested] = useState(false); // true once there is a suggestion to show
+    const [matchId, setMatchId] = useState(null); // the existing hazard the AI says this is the same as
     const [suggesting, setSuggesting] = useState(false);
     const [error, setError] = useState("");
 
+    const match = hazards.find((h) => h.id === matchId) ?? null;
     const hasInput = Boolean(prompt.trim() || photoFile);
     const canSend = hasInput && !suggesting;
     const phase = suggesting ? "loading" : error ? "error" : suggested ? "ready" : "idle";
@@ -54,6 +57,7 @@ export default function HazardAdd() {
     const resetSuggestion = () => {
         setSuggestion("");
         setSuggested(false);
+        setMatchId(null);
     };
 
     const handlePhoto = (e) => {
@@ -80,7 +84,9 @@ export default function HazardAdd() {
         setError("");
         resetSuggestion();
         try {
-            setSuggestion(await suggestHazard({ text: prompt.trim(), photoFile }));
+            const answer = await suggestHazard({ text: prompt.trim(), photoFile, hazards });
+            setSuggestion(answer.suggestion);
+            setMatchId(answer.matchId);
             setSuggested(true);
         } catch (err) {
             setError(err.message);
@@ -107,8 +113,14 @@ export default function HazardAdd() {
         e.preventDefault();
         const name = suggestion.trim();
         if (!name) return;
-        addHazard({ name, photo });
-        navigate("/hazard");
+        if (match) {
+            const note = prompt.trim();
+            if (note) updateHazard(match.id, { comment: match.comment ? `${match.comment}\n${note}` : note });
+            if (photo) addPhotos(match.id, [photo]);
+            navigate(`/hazard/${match.id}`);
+            return;
+        }
+        navigate(`/hazard/${addHazard({ name, photo })}`);
     };
 
     return (
@@ -189,7 +201,7 @@ export default function HazardAdd() {
             <section className={`ha-suggest ha-suggest--${phase}`} aria-labelledby="ha-suggest-label" aria-live="polite">
                 <h2 className="ha-suggest-heading" id="ha-suggest-label">
                     <span className="ha-suggest-icon">{phase === "error" ? <WarningIcon /> : <InfoIcon />}</span>
-                    {phase === "error" ? "No suggestion this time" : "Suggested hazard"}
+                    {phase === "error" ? "No suggestion this time" : match && phase === "ready" ? "Similar hazard found" : "Suggested hazard"}
                 </h2>
 
                 {phase === "idle" && (
@@ -213,7 +225,18 @@ export default function HazardAdd() {
                     </>
                 )}
 
-                {phase === "ready" && (
+                {phase === "ready" && match && (
+                    <>
+                        <p className="ha-suggest-text">
+                            Similar to <strong>{match.name}</strong>. Accept adds your photo and description to that hazard.
+                        </p>
+                        <button type="button" className="ha-retry" onClick={() => setMatchId(null)}>
+                            Create a new hazard instead
+                        </button>
+                    </>
+                )}
+
+                {phase === "ready" && !match && (
                     <>
                         <textarea
                             className="ha-suggest-input"

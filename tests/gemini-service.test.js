@@ -24,7 +24,7 @@ mock.module("@google/genai", {
     },
 });
 
-const { suggestHazard, matchSheets } = await import("../server/services/gemini.js");
+const { suggestHazard, suggestHazardMatch, matchSheets } = await import("../server/services/gemini.js");
 
 const answers = (text) => () => Promise.resolve({ text });
 const fails = (message) => () => Promise.reject(new Error(message));
@@ -222,4 +222,33 @@ test("GEM-18 matchSheets: an answer that isn't JSON counts as a failure and the 
         { sheetId: "cu-732044", reason: "Logging truck" },
     ]);
     assert.deepEqual(calls.map((c) => c.model), ["primary-model", "backup-model"]);
+});
+
+const JOB_HAZARDS = [{ id: "h1", name: "Falls from height" }, { id: "h2", name: "Chain binders" }];
+
+test("GEM-19 suggestHazardMatch sends the job's hazards and returns the matching id", async (t) => {
+    setup(t, { "primary-model": json({ name: "Unsecured Ladder", matchId: "h1" }) });
+    assert.deepEqual(await suggestHazardMatch({ text: "ladder", hazards: JOB_HAZARDS }), {
+        suggestion: "Unsecured Ladder",
+        matchId: "h1",
+    });
+    assert.match(calls[0].contents[0].text, /h2 \| Chain binders/);
+    assert.equal(calls[0].config.responseMimeType, "application/json");
+});
+
+test("GEM-20 suggestHazardMatch: no match or a made-up id means a new hazard", async (t) => {
+    for (const matchId of ["", "h99"]) {
+        setup(t, { "primary-model": json({ name: "Blocked Exit", matchId }) });
+        const answer = await suggestHazardMatch({ text: "exit", hazards: JOB_HAZARDS });
+        assert.deepEqual(answer, { suggestion: "Blocked Exit", matchId: null });
+        t.mock.timers.reset();
+    }
+});
+
+test("GEM-21 suggestHazardMatch: an answer that isn't JSON counts as a failure and the fallback answers", async (t) => {
+    setup(t, {
+        "primary-model": answers("Blocked Exit"),
+        "backup-model": json({ name: "Blocked Exit", matchId: "h2" }),
+    });
+    assert.equal((await suggestHazardMatch({ text: "x", hazards: JOB_HAZARDS })).matchId, "h2");
 });

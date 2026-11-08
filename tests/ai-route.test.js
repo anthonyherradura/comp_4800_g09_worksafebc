@@ -14,6 +14,10 @@ mock.module("../server/services/gemini.js", {
             serviceCalls.push(input);
             return fakeSuggest(input);
         },
+        suggestHazardMatch: async (input) => {
+            serviceCalls.push(input);
+            return { suggestion: "Unsecured Ladder", matchId: input.hazards[0].id };
+        },
         matchSheets: async (input) => {
             serviceCalls.push(input);
             return fakeMatch(input);
@@ -286,4 +290,23 @@ test("SHEET-07 Gemini fails: 502, and an unreadable photo gets the photo message
     const bad = await post(matchUrl, form({ photos: [{}] }));
     assert.equal(bad.status, 400);
     assert.deepEqual(bad.body, { error: "We couldn't read that photo. Try another one." });
+});
+
+test("MATCH-01 with the job's hazards the route returns the matching hazard id", async () => {
+    reset();
+    const body = form({ text: "ladder" });
+    body.append("hazards", JSON.stringify([{ id: "h1", name: " Falls " }, { name: "no id" }]));
+    const res = await post(url, body);
+    assert.equal(res.status, 200);
+    assert.deepEqual(res.body, { suggestion: "Unsecured Ladder", matchId: "h1" });
+    assert.deepEqual(serviceCalls[0].hazards, [{ id: "h1", name: "Falls" }]);
+});
+
+test("MATCH-02 a malformed hazards field still gets a plain suggestion", async () => {
+    reset();
+    const body = form({ text: "ladder" });
+    body.append("hazards", "{not json");
+    const res = await post(url, body);
+    assert.equal(res.status, 200);
+    assert.deepEqual(res.body, { suggestion: "Unsecured Ladder" });
 });

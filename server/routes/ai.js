@@ -1,5 +1,6 @@
 // AI API. Needs a signed-in officer.
-//   POST /api/ai/suggest-hazard  (multipart: text?, photo?)  -> 200 { suggestion }
+//   POST /api/ai/suggest-hazard  (multipart: text?, photo?, hazards?)  -> 200 { suggestion, matchId? }
+//        hazards is a JSON list of the job's [{ id, name }]; matchId is the one the input is the same as, or null
 //   POST /api/ai/match-sheet     (multipart: text?, photo?)  -> 200 { matches: [{ sheetId, reason }] }
 // Errors are { error } with a message that is safe to show to the officer.
 
@@ -7,11 +8,13 @@ import { Router } from "express";
 import multer from "multer";
 import { rateLimit } from "express-rate-limit";
 import requireAuth from "../middleware/requireAuth.js";
-import { matchSheets, suggestHazard } from "../services/gemini.js";
+import { matchSheets, suggestHazard, suggestHazardMatch } from "../services/gemini.js";
 import { SHEET_CATALOG } from "../services/sheetCatalog.js";
 
 const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
 const MAX_TEXT_CHARS = 500;
+const MAX_HAZARDS = 200;
+const MAX_HAZARD_NAME_CHARS = 200;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 // Protects your Gemini quota
@@ -62,6 +65,21 @@ function readInput(req, res, emptyMessage) {
     return { text, photo };
 }
 
+// The job's hazards to compare against. Anything malformed is left out: the officer still gets a suggestion.
+function readHazards(req) {
+    let list;
+    try {
+        list = JSON.parse(asString(req.body?.hazards) || "[]");
+    } catch {
+        return [];
+    }
+    if (!Array.isArray(list)) return [];
+    return list
+        .filter((h) => asString(h?.id) && asString(h?.name).trim())
+        .slice(0, MAX_HAZARDS)
+        .map((h) => ({ id: h.id, name: h.name.trim().slice(0, MAX_HAZARD_NAME_CHARS) }));
+}
+
 function sendGeminiError(res, err) {
     if (err.code === "BAD_PHOTO") {
         return res.status(400).json({ error: "We couldn't read that photo. Try another one." });
@@ -80,7 +98,12 @@ router.post("/suggest-hazard", requireAuth, aiLimiter, uploadPhoto, async (req, 
     if (!input) return;
 
     try {
-        res.json({ suggestion: await suggestHazard(input) });
+        const hazards = readHazards(req);
+        res.json(
+            hazards.length
+                ? await suggestHazardMatch({ ...input, hazards })
+                : { suggestion: await suggestHazard(input) }
+        );
     } catch (err) {
         sendGeminiError(res, err);
     }

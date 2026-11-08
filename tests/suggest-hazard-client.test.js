@@ -11,7 +11,7 @@ test("CLI-01 posts the text and photo as multipart to /api/ai/suggest-hazard", a
     const fetch = t.mock.method(globalThis, "fetch", respond(200, { suggestion: "Unsecured Ladder" }));
     const photoFile = new File(["jpeg-bytes"], "site.jpg", { type: "image/jpeg" });
 
-    assert.equal(await suggestHazard({ text: "ladder", photoFile }), "Unsecured Ladder");
+    assert.deepEqual(await suggestHazard({ text: "ladder", photoFile }), { suggestion: "Unsecured Ladder", matchId: null });
 
     const [url, options] = fetch.mock.calls[0].arguments;
     assert.equal(url, "/api/ai/suggest-hazard");
