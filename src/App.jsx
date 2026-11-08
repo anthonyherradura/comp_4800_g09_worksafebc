@@ -14,7 +14,7 @@ import { JobProvider } from "./context/JobContext";
 import HazardList from "./pages/Hazard/HazardList";
 import HazardAdd from "./pages/Hazard/HazardAdd";
 import HazardDetail from "./pages/Hazard/HazardDetail";
-import SheetsPage from "./pages/sheets/SheetsPage";
+import SheetsPage from "./pages/Sheets/SheetsPage";
 import PdfsPage from "./pages/Pdfs/PdfsPage";
 import HazardSearch from "./pages/Hazard/HazardSearch";
 
