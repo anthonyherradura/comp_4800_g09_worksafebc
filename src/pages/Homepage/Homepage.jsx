@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../../auth/useAuth";
 import { useHazards } from "../../context/HazardContext";
 import { useJobs } from "../../context/JobContext";
 import { SHEET_CATALOG, getSheetChecklist, getSheetHazards } from "../../data/sheets";
@@ -13,7 +14,7 @@ import "./Homepage.css";
 const byId = Object.fromEntries(SHEET_CATALOG.map((s) => [s.sheetId, s]));
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 const MAX_RECENT = 3;
-const DEFAULT_RECENT = SHEET_CATALOG.slice(0, 2).map((s) => s.sheetId);
+const DEFAULT_SHEETS = SHEET_CATALOG.slice(0, 2);
 
 const CheckIcon = () => (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -83,21 +84,24 @@ export default function HomePage() {
     const [query, setQuery] = useState("");
     const [ai, setAi] = useState({ status: "idle" }); // idle | loading | done | error
     // Sheet ids, most recently viewed first. Saved on the device.
-    const [recentIds, setRecentIds, recentLoaded] = usePersistentState("hiips360.recentSheets", []);
+    const { user } = useAuth();
+    const requestId = useRef(0);
+
+    const email = user?.email?.trim().toLowerCase();
+    const [recentIds, setRecentIds, recentLoaded] = usePersistentState(
+        email ? `hiips360.recentSheets.${email}` : null,
+        []
+    );
     const selected = byId[currentJob?.sheetId] ?? null;
 
     const q = query.trim();
     const searching = q !== "";
     const aiMatches = ai.status === "done" ? ai.matches.filter((m) => byId[m.sheetId]) : [];
     const filtered = SHEET_CATALOG.filter((s) => matchesWords(s, query));
-    // Sheets the user picked come first; the defaults fill any slots left over.
-    const recentSheets = !recentLoaded
-        ? []
-        : [...new Set([...recentIds, ...DEFAULT_RECENT])]
-            .map((id) => byId[id])
-            .filter(Boolean)
-            .slice(0, MAX_RECENT);    // Typing searches the whole catalog. With nothing typed, show what was viewed recently.
-    const listed = searching ? filtered : recentSheets;
+    const recentSheets = recentIds.map((id) => byId[id]).filter(Boolean).slice(0, MAX_RECENT);
+    const hasRecent = recentSheets.length > 0;
+    const listed = searching ? filtered : hasRecent ? recentSheets : DEFAULT_SHEETS;
+    const listReady = searching || recentLoaded;
 
     function remember(sheetId) {
         setRecentIds((prev) => [sheetId, ...prev.filter((id) => id !== sheetId)].slice(0, MAX_RECENT));
@@ -118,13 +122,22 @@ export default function HomePage() {
     }
 
     async function ask({ text, photoFile }) {
+        const id = ++requestId.current;
         setAi({ status: "loading", fromPhoto: !!photoFile });
         try {
             const matches = await matchSheets({ text, photoFile });
+            if (id !== requestId.current) return;
             setAi({ status: "done", fromPhoto: !!photoFile, matches });
         } catch (err) {
+            if (id !== requestId.current) return;
             setAi({ status: "error", message: err.message });
         }
+    }
+
+    function handleQueryChange(e) {
+        setQuery(e.target.value);
+        requestId.current += 1;
+        setAi((prev) => (prev.status === "idle" ? prev : { status: "idle" }));
     }
 
     function handleAsk(e) {
@@ -219,7 +232,7 @@ export default function HomePage() {
                     type="search"
                     maxLength={500}
                     value={query}
-                    onChange={(e) => setQuery(e.target.value)}
+                    onChange={handleQueryChange}
                     placeholder="Sheet name, CU number or the work"
                     enterKeyHint="search"
                 />
@@ -273,28 +286,30 @@ export default function HomePage() {
                 </section>
             )}
 
-            <section aria-labelledby="sheets-heading">
-                <h2 id="sheets-heading" className="home-section-heading">
-                    {searching
-                        ? `${filtered.length} of ${SHEET_CATALOG.length} sheets match “${q}”`
-                        : `Recently viewed${recentSheets.length ? ` (${recentSheets.length})` : ""}`}
-                </h2>
-                {listed.length === 0 ? (
-                    (searching || recentLoaded) && (
+            {listReady && (
+                <section aria-labelledby="sheets-heading">
+                    <h2 id="sheets-heading" className="home-section-heading">
+                        {searching
+                            ? `${filtered.length} of ${SHEET_CATALOG.length} sheets match “${q}”`
+                            : hasRecent
+                                ? `Recently viewed (${recentSheets.length})`
+                                : `Sheets (${DEFAULT_SHEETS.length})`}
+                    </h2>
+                    {listed.length === 0 ? (
                         <p className="home-box home-panel-note">
                             {searching
                                 ? "No sheet names match. Tap Ask AI to search by what the work is."
                                 : "No protocol sheets found."}
                         </p>
-                    )
-                ) : (
-                    <ul className="home-panel">
-                        {listed.map((s) => (
-                            <SheetOption key={s.sheetId} sheet={s} selected={s.sheetId === selected?.sheetId} onPick={pick} />
-                        ))}
-                    </ul>
-                )}
-            </section>
+                    ) : (
+                        <ul className="home-panel">
+                            {listed.map((s) => (
+                                <SheetOption key={s.sheetId} sheet={s} selected={s.sheetId === selected?.sheetId} onPick={pick} />
+                            ))}
+                        </ul>
+                    )}
+                </section>
+            )}
 
             <div className="home-panel">
                 <Link className="home-card" to="/pdfs">
