@@ -83,7 +83,7 @@ export function HazardProvider({ children }) {
         }
     };
 
-    const addHazard = ({ name, photo }) => {
+    const addHazard = ({ name, photo, comment = "" }) => {
         const id = makeId();
         setHazards((prev) => [
             ...prev,
@@ -91,7 +91,7 @@ export function HazardProvider({ children }) {
                 id,
                 worksiteId: jobId,
                 name,
-                comment: "",
+                comment,
                 photoIds: [],
                 notApplicable: false,
                 createdAt: new Date().toISOString(),

@@ -252,3 +252,12 @@ test("GEM-21 suggestHazardMatch: an answer that isn't JSON counts as a failure a
     });
     assert.equal((await suggestHazardMatch({ text: "x", hazards: JOB_HAZARDS })).matchId, "h2");
 });
+
+test("GEM-22 every prompt tells Gemini to answer in English (B-23)", async (t) => {
+    setup(t, { "primary-model": json({ name: "Blocked Exit", matchId: "", matches: [] }) });
+    await suggestHazard({ text: "x" }).catch(() => {});
+    await suggestHazardMatch({ text: "x", hazards: JOB_HAZARDS });
+    await matchSheets({ text: "x", sheets: SHEETS });
+    assert.equal(calls.length, 3);
+    for (const call of calls) assert.match(call.config.systemInstruction, /Always write in English/);
+});

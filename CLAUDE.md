@@ -110,7 +110,7 @@ The UI follows the WorkSafeBC UX/UI Design System (README, "UI and design system
 
 ## Gotchas
 
-- Import paths are case-sensitive on Linux/CI but not on Windows, where this team develops. The component `HomePage` lives in `Homepage/Homepage.jsx`. `App.jsx` currently imports `./pages/sheets/SheetsPage` while the folder is `Sheets`, which would break a Linux build (B-16). `App.jsx` also declares `/sheets` and `/sheets/:sheetId` twice.
+- Import paths are case-sensitive on Linux/CI but not on Windows, where this team develops. The component `HomePage` lives in `Homepage/Homepage.jsx`. `App.jsx` also declares `/sheets` and `/sheets/:sheetId` twice.
 - `npm run build` currently fails (B-14): vite-plugin-pwa won't precache the onnxruntime `.wasm` files (17–28 MB each, over Workbox's 2 MiB limit). The fix belongs in the `workbox` options in `vite.config.js` (`globIgnores` for `*.wasm`, or a higher `maximumFileSizeToCacheInBytes`). `npm run lint` also has 3 known errors (B-15).
 - Known bugs are tracked in the team's Google Sheet `S3_TestingLog_G09` (Test Cases, Test Runs, Bugs; IDs `TC-nn` and `B-nn`). Code comments and commits refer to those IDs.
 - `npm run dev:api` uses `node --watch`, which also restarts when files in `node_modules` change (e.g. right after `npm install`). A 502 just after startup usually means the API is mid-restart; wait for "MongoDB connected".

@@ -34,6 +34,8 @@ const WarningIcon = () => (
     </svg>
 );
 
+const NO_HAZARD = "no hazard identified"; // the AI's answer when it finds nothing
+
 // Page 2: add a photo, a description, or both, ask the AI for a suggested hazard, then Accept.
 // If it is the same as a hazard already on the job, Accept adds to that hazard instead of creating one.
 // The button and the suggestion box have three phases: waiting for input, getting a suggestion, suggestion ready.
@@ -46,6 +48,7 @@ export default function HazardAdd() {
     const [suggestion, setSuggestion] = useState(""); // editable once the AI has answered
     const [suggested, setSuggested] = useState(false); // true once there is a suggestion to show
     const [matchId, setMatchId] = useState(null); // the existing hazard the AI says this is the same as
+    const [noHazard, setNoHazard] = useState(false); // the AI found nothing, so there is no name to accept
     const [suggesting, setSuggesting] = useState(false);
     const [error, setError] = useState("");
 
@@ -58,6 +61,7 @@ export default function HazardAdd() {
         setSuggestion("");
         setSuggested(false);
         setMatchId(null);
+        setNoHazard(false);
     };
 
     const handlePhoto = (e) => {
@@ -85,8 +89,10 @@ export default function HazardAdd() {
         resetSuggestion();
         try {
             const answer = await suggestHazard({ text: prompt.trim(), photoFile, hazards });
-            setSuggestion(answer.suggestion);
-            setMatchId(answer.matchId);
+            const none = answer.suggestion.trim().toLowerCase() === NO_HAZARD;
+            setNoHazard(none);
+            setSuggestion(none ? "" : answer.suggestion);
+            setMatchId(none ? null : answer.matchId);
             setSuggested(true);
         } catch (err) {
             setError(err.message);
@@ -113,14 +119,14 @@ export default function HazardAdd() {
         e.preventDefault();
         const name = suggestion.trim();
         if (!name) return;
+        const note = prompt.trim();
         if (match) {
-            const note = prompt.trim();
             if (note) updateHazard(match.id, { comment: match.comment ? `${match.comment}\n${note}` : note });
             if (photo) addPhotos(match.id, [photo]);
             navigate(`/hazard/${match.id}`);
             return;
         }
-        navigate(`/hazard/${addHazard({ name, photo })}`);
+        navigate(`/hazard/${addHazard({ name, photo, comment: note })}`);
     };
 
     return (
@@ -201,7 +207,7 @@ export default function HazardAdd() {
             <section className={`ha-suggest ha-suggest--${phase}`} aria-labelledby="ha-suggest-label" aria-live="polite">
                 <h2 className="ha-suggest-heading" id="ha-suggest-label">
                     <span className="ha-suggest-icon">{phase === "error" ? <WarningIcon /> : <InfoIcon />}</span>
-                    {phase === "error" ? "No suggestion this time" : match && phase === "ready" ? "Similar hazard found" : "Suggested hazard"}
+                    {phase === "error" ? "No suggestion this time" : phase !== "ready" ? "Suggested hazard" : match ? "Similar hazard found" : noHazard ? "No hazard identified" : "Suggested hazard"}
                 </h2>
 
                 {phase === "idle" && (
@@ -221,7 +227,7 @@ export default function HazardAdd() {
                             </span>
                             Getting a suggestion…
                         </p>
-                        <p className="ha-suggest-text">Usually a few seconds. You can keep typing the name yourself.</p>
+                        <p className="ha-suggest-text">Usually a few seconds.</p>
                     </>
                 )}
 
@@ -242,11 +248,16 @@ export default function HazardAdd() {
                             className="ha-suggest-input"
                             rows={2}
                             aria-label="Suggested hazard name"
+                            placeholder={noHazard ? "Type a hazard name" : undefined}
                             maxLength={200}
                             value={suggestion}
                             onChange={(e) => setSuggestion(e.target.value)}
                         />
-                        <p className="ha-suggest-text">Edit the name if needed, then Accept.</p>
+                        <p className="ha-suggest-text">
+                            {noHazard
+                                ? "The AI didn't find a hazard. Type a name if you still want to log one."
+                                : "Edit the name if needed, then Accept."}
+                        </p>
                     </>
                 )}
 
