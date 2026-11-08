@@ -342,7 +342,7 @@ There is no `npm run seed` yet.
 1. Put the phone and the laptop on the same Wi-Fi. Campus Wi-Fi usually stops devices from reaching each other; if the phone can't load the page, turn on the phone's hotspot and connect the laptop to it.
 2. On Windows, set that network to **Private** (Settings > Network & internet > your connection > Network profile type). If Windows Firewall asks about Node.js, allow it on private networks.
 3. Run `npm run dev:phone` and open the `Network:` address that Vite prints (for example `http://192.168.1.68:5173`) on the phone. Only port 5173 needs to be reachable; Vite passes `/api` on to the API.
-4. Sign in and use the app. The camera works through the photo box on Add hazard. Installing to the home screen and offline use need HTTPS, so test those with a deployed build instead.
+4. Sign in and use the app. The camera works through the photo box on Log hazard. Installing to the home screen and offline use need HTTPS, so test those with a deployed build instead.
 
 **Common problems**
 

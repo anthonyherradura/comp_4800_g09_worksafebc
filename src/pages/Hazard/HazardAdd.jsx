@@ -126,7 +126,7 @@ export default function HazardAdd() {
     return (
         <form className="ha-page" onSubmit={handleAccept}>
             <div className="ha-top">
-                <h1 className="ha-title">Add hazard</h1>
+                <h1 className="ha-title">Log hazard</h1>
                 <button type="button" className="ha-close" aria-label="Close" onClick={handleClose}>
                     <CloseIcon />
                 </button>

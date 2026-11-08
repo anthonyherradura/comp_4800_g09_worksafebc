@@ -222,7 +222,7 @@
     box-shadow: inset 0 0 0 2px var(--wsbc-bodycopy);
 }
 
-/* ---------- Search and Add hazard ---------- */
+/* ---------- Log hazard ---------- */
 .hl-tools {
     display: flex;
     gap: 8px;
@@ -608,8 +608,12 @@
 }
 
 /* ---------- Suggested hazard box: three phases ---------- */
+/* The gap spaces everything in the box, so its children have no margins of their own */
 .ha-suggest {
-    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
     border: 1px solid var(--wsbc-mountain-blue);
     border-radius: 6px;
     background: var(--wsbc-pale-mountain-blue);
@@ -619,7 +623,8 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    margin: 0 0 8px;
+    margin: 0;
+    padding: 0; /* wsbc.css pads h2 */
     font-size: 0.75rem;
     font-weight: 700;
     letter-spacing: 0.05em;
@@ -650,7 +655,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    margin: 0 0 8px;
+    margin: 0;
     font-size: 0.9375rem;
     font-weight: 700;
 }
@@ -700,10 +705,6 @@
     color: var(--wsbc-huckleberry-red);
 }
 
-.ha-suggest--error .ha-suggest-text {
-    margin-bottom: 12px;
-}
-
 .ha-retry {
     min-height: 44px;
     padding: 0 18px;
@@ -730,8 +731,9 @@
 .ha-suggest-input {
     display: block;
     width: 100%;
+    height: auto; /* wsbc.css makes textareas 150px tall; the rows attribute sets it here */
     min-height: 48px;
-    margin: 0 0 8px;
+    margin: 0;
     padding: 8px 10px;
     border: 1px solid var(--wsbc-steel-grey);
     border-radius: 6px;
