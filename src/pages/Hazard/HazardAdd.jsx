@@ -50,6 +50,7 @@ export default function HazardAdd() {
     const [matchId, setMatchId] = useState(null); // the existing hazard the AI says this is the same as
     const [noHazard, setNoHazard] = useState(false); // the AI found nothing, so there is no name to accept
     const [suggesting, setSuggesting] = useState(false);
+    const [saving, setSaving] = useState(false);
     const [error, setError] = useState("");
 
     const match = hazards.find((h) => h.id === matchId) ?? null;
@@ -115,10 +116,10 @@ export default function HazardAdd() {
         navigate("/hazard");
     };
 
-    const handleAccept = (e) => {
+    const handleAccept = async (e) => {
         e.preventDefault();
         const name = suggestion.trim();
-        if (!name) return;
+        if (!name || saving) return;
         const note = prompt.trim();
         if (match) {
             if (note) updateHazard(match.id, { comment: match.comment ? `${match.comment}\n${note}` : note });
@@ -126,7 +127,10 @@ export default function HazardAdd() {
             navigate(`/hazard/${match.id}`);
             return;
         }
-        navigate(`/hazard/${addHazard({ name, photo, comment: note })}`);
+        setSaving(true);
+        const id = await addHazard({ name, photo, comment: note });
+        setSaving(false);
+        if (id) navigate(`/hazard/${id}`); // if not, the save error shows and the form keeps its input
     };
 
     return (
@@ -274,8 +278,8 @@ export default function HazardAdd() {
             </section>
 
             <div className="ha-actions">
-                <button type="submit" className="btn btn-orange" disabled={!suggestion.trim() || suggesting}>
-                    Accept
+                <button type="submit" className="btn btn-orange" disabled={!suggestion.trim() || suggesting || saving}>
+                    {saving ? "Saving…" : "Accept"}
                 </button>
                 <button type="button" className="btn ha-clear" onClick={handleClear} disabled={suggesting}>
                     Clear
@@ -283,4 +287,4 @@ export default function HazardAdd() {
             </div>
         </form>
     );
-}
+}

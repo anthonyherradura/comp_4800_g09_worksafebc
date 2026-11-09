@@ -1,22 +1,13 @@
-import { createStore, del, get, set } from "idb-keyval";
+import { clear, createStore } from "idb-keyval";
 
-const store = createStore("hiips360", "kv");
-
-export const load = (key, fallback) =>
-    get(key, store).then((v) => v ?? fallback).catch(() => fallback);
-
-export const save = (key, value) => set(key, value, store).catch(() => {});
-
-// Photos are kept one per record so saving a comment never rewrites the images.
-export const savePhoto = (id, blob) => save(`photo:${id}`, blob);
-export const loadPhoto = (id) => load(`photo:${id}`, null);
-export const removePhoto = (id) => del(`photo:${id}`, store).catch(() => {});
+// Job sites, hazards, photos and recent sheets are saved in MongoDB through the API now (src/data/api.js).
+// This file keeps the photo shrinking and ids, and removes what older versions left on the device.
 
 // crypto.randomUUID() only exists over HTTPS or localhost, so it breaks when you
 // test on the phone over http://10.0.0.143. This works everywhere.
 export const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 
-// Phone photos are 3 to 5 MB. Shrinking them keeps the storage small.
+// Phone photos are 3 to 5 MB. Shrinking them keeps uploads and storage small.
 export async function shrinkImage(file, maxSide = 1600, quality = 0.8) {
     const bmp = await createImageBitmap(file);
     const scale = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
@@ -27,5 +18,20 @@ export async function shrinkImage(file, maxSide = 1600, quality = 0.8) {
     return new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
 }
 
-// Asks the browser not to clear this data when space runs low.
-export const requestPersistence = () => navigator.storage?.persist?.();
+// Fresh start (Nov 2026): the team chose not to move device-only test data to the database.
+// Runs once per device and deletes the old copies: jobs in localStorage (hiips360.jobs.<email>), and the
+// hazards, photos and recent sheets in IndexedDB (db "hiips360", store "kv"). The signed-in session is kept.
+const CLEARED_KEY = "hiips360.deviceDataCleared";
+
+export async function clearOldDeviceData() {
+    try {
+        if (localStorage.getItem(CLEARED_KEY)) return;
+        Object.keys(localStorage)
+            .filter((key) => key.startsWith("hiips360.jobs.") || key === "hiips360.lastOpened")
+            .forEach((key) => localStorage.removeItem(key));
+        await clear(createStore("hiips360", "kv"));
+        localStorage.setItem(CLEARED_KEY, new Date().toISOString());
+    } catch {
+        // Storage blocked (private mode): nothing was saved there anyway
+    }
+}

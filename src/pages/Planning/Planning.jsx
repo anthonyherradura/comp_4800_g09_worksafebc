@@ -66,8 +66,19 @@ function StatusSegments({ item, value, onSelect }) {
 }
 
 export default function PlanningPage() {
-    const { currentJob, setChecklistStatus } = useJobs();
-    const [notes, setNotes] = useState("");
+    const { currentJob, setChecklistStatus, saveVisitNotes } = useJobs();
+    // The box keeps what is typed; it saves to the job once typing pauses. Starts again for another job.
+    const [notes, setNotes] = useState(currentJob?.visitNotes ?? "");
+    const [notesFor, setNotesFor] = useState(currentJob?.id);
+    if (notesFor !== currentJob?.id) {
+        setNotesFor(currentJob?.id);
+        setNotes(currentJob?.visitNotes ?? "");
+    }
+
+    const handleNotes = (event) => {
+        setNotes(event.target.value);
+        if (currentJob) saveVisitNotes(currentJob.id, event.target.value);
+    };
     const [openGroup, setOpenGroup] = useState(null); // null until the person opens one; the first group starts open
 
     // The checklist comes from the job's protocol sheet; its progress is saved on the job
@@ -167,14 +178,16 @@ export default function PlanningPage() {
                     id="planning-notes"
                     className="planning-textarea"
                     value={notes}
-                    onChange={(event) => setNotes(event.target.value)}
+                    onChange={handleNotes}
+                    maxLength={5000}
+                    disabled={!currentJob}
                     placeholder="Add visit notes…"
                     aria-describedby="planning-demo"
                 />
                 <p id="planning-demo" className="planning-demo">
-                    Visit notes last only while this page is open.
+                    {currentJob ? "Saved to this job as you type." : "Pick a job site to add visit notes."}
                 </p>
             </div>
         </div>
     );
-}
+}

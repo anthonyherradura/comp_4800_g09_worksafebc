@@ -37,23 +37,31 @@ export default function JobsPage() {
     const { jobs, currentJob, addJob, openJob, deleteJob } = useJobs();
     const [label, setLabel] = useState("");
     const [search, setSearch] = useState("");
+    const [busy, setBusy] = useState(false); // waiting for the server, so a double tap doesn't send twice
     const navigate = useNavigate();
     const shown = jobs.filter((job) => matchesSearch(job.label, search));
 
-    function handleAdd(e) {
+    async function handleAdd(e) {
         e.preventDefault();
-        if (!addJob(label)) return;
+        if (busy) return;
+        setBusy(true);
+        const id = await addJob(label);
+        setBusy(false);
+        if (!id) return;
         setLabel("");
         navigate(JOB_START_ROUTE);
     }
 
-    function handleOpen(id) {
-        openJob(id);
-        navigate(JOB_START_ROUTE);
+    async function handleOpen(id) {
+        if (busy) return;
+        setBusy(true);
+        const opened = await openJob(id);
+        setBusy(false);
+        if (opened) navigate(JOB_START_ROUTE);
     }
 
     function handleDelete(job) {
-        if (window.confirm(`Remove "${job.label}" from your job sites?`)) deleteJob(job.id);
+        if (window.confirm(`Delete "${job.label}" with its hazards and photos? This can't be undone.`)) deleteJob(job.id);
     }
 
     return (
@@ -78,7 +86,7 @@ export default function JobsPage() {
                     type="submit"
                     className="jobs-add-btn"
                     aria-label="Create job"
-                    disabled={!label.trim()}
+                    disabled={!label.trim() || busy}
                 >
                     <PlusIcon />
                 </button>
@@ -150,8 +158,8 @@ export default function JobsPage() {
             </section>
 
             {jobs.length > 0 && (
-                <p className="jobs-hint">Tap a site to open it. × only removes it from this phone.</p>
+                <p className="jobs-hint">Tap a site to open it. × deletes the site with its hazards and photos.</p>
             )}
         </div>
     );
-}
+}

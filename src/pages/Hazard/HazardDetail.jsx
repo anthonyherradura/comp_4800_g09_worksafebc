@@ -113,8 +113,12 @@ export default function HazardDetail() {
     const hazard = hazards.find((h) => h.id === id);
     const guidance = hazard?.source === "sheet" ? getSheetHazard(hazard.sheetId, hazard.sheetKey) : null;
     const [tab, setTab] = useState(guidance ? "guidance" : "comment"); // "guidance" | "comment" | "photos"
+    const [deleting, setDeleting] = useState(false);
 
-    // Happens for a deleted hazard or a link to one that isn't saved on this device
+    // Just deleted here: the list is about to show
+    if (!hazard && deleting) return null;
+
+    // Happens for a deleted hazard, or a link to one that isn't this officer's
     if (!hazard) {
         return (
             <div className="hd-page">
@@ -136,11 +140,12 @@ export default function HazardDetail() {
         e.target.value = "";
     };
 
-    const handleDelete = () => {
+    const handleDelete = async () => {
         if (window.confirm(`Delete "${hazard.name}"? This can't be undone.`)) {
-            hazard.photos.forEach((url) => URL.revokeObjectURL(url));
-            deleteHazard(id);
-            navigate("/hazard");
+            // Back to the list once the server has deleted it, so it doesn't show there for a moment
+            setDeleting(true);
+            if (await deleteHazard(id)) navigate("/hazard");
+            else setDeleting(false);
         }
     };
 
@@ -259,4 +264,4 @@ export default function HazardDetail() {
             </button>
         </div>
     );
-}
+}

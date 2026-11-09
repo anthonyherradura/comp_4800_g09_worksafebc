@@ -9,7 +9,7 @@ Everything runs **locally**. You don't need a MongoDB Atlas account or any onlin
 | Piece | Where | What it does |
 |---|---|---|
 | API | `server/` | Express app on port 3001: register, sign in, sign out, "who am I" |
-| Database | MongoDB on your machine | Stores users (passwords as bcrypt hashes only) and sign-in sessions |
+| Database | MongoDB on your machine | Stores users (passwords as bcrypt hashes only), sign-in sessions, and each officer's job sites, hazards and photos |
 | Front end | `src/` | Vite on port 5173. It forwards `/api` requests to the API, so you only ever open 5173 |
 | Settings | `.env` (you create it) | Database address and the session secret. **Never commit it.** |
 
@@ -114,51 +114,31 @@ You should see the account you just made. Each document also has a `passwordHash
 
 ## 6. Set up the inspection database (once)
 
-The inspection data (job sites, inspections, hazards, photos, Summary reviews) uses MongoDB **transactions**, so a whole save either happens or doesn't. Transactions need MongoDB running as a **replica set**. A single-node one on your laptop is enough. Sign-in works without this, but `npm run db:setup` stops with a "standalone server" message until it's done.
+Job sites, hazards, photos, the Planning checklist, visit notes and recently viewed sheets are saved in MongoDB through the API. A plain local MongoDB is enough: no replica set or other extra setup. (If you set up the `rs0` replica set for the earlier design, you can leave it. Everything still works.)
 
-1. Open **Command Prompt as administrator** (right-click, **Run as administrator**) and open the config file:
-   ```cmd
-   notepad "C:\Program Files\MongoDB\Server\8.0\bin\mongod.cfg"
-   ```
-   Find `#replication:` near the bottom and replace it with these two lines. Use **two spaces** before `replSetName`, not a tab:
-   ```yaml
-   replication:
-     replSetName: rs0
-   ```
-2. Save, then restart MongoDB in the same admin window:
-   ```cmd
-   net stop MongoDB
-   net start MongoDB
-   ```
-3. Start the replica set. This works in a normal window:
-   ```cmd
-   npx mongosh --quiet --eval "rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: '127.0.0.1:27017' }] })"
-   ```
-   Use this exact command, not plain `rs.initiate()`, which can register your computer's name instead of `127.0.0.1` and stop the API connecting.
-4. Check it. This should print `rs0`:
-   ```cmd
-   npx mongosh --quiet --eval "db.hello().setName"
-   ```
-5. In `.env`, remove the `#` in front of `MONGODB_TEST_URI` so the line reads:
-   ```
-   MONGODB_TEST_URI=mongodb://127.0.0.1:27017/?replicaSet=rs0
-   ```
-   Keep `MONGODB_URI` as it is.
-6. From the project folder, create the collections and load the protocol sheets:
+1. From the project folder, create the collections, their rules and indexes:
    ```cmd
    npm run db:setup
    ```
-   It should end with `sheets: 2, sections: 21, chunks: 104 …` and `MongoDB is ready.`
-7. Check everything passes:
+   It should end with `MongoDB is ready.` If it lists collections "from the old database design", it also prints the one command that drops them. Your accounts and sessions are kept.
+2. Optional: to run the database tests, remove the `#` in front of `MONGODB_TEST_URI` in `.env` so the line reads:
+   ```
+   MONGODB_TEST_URI=mongodb://127.0.0.1:27017
+   ```
+   Then:
    ```cmd
    npm test
    npm run test:db
    ```
    `npm run test:db` uses its own throwaway `hiips360_test_…` database and deletes it afterwards, so your data isn't touched.
 
-**After pulling new changes**, run `npm install` and then `npm run db:setup` again. It updates the database rules and loads any new sheets without touching your data.
+**After pulling new changes**, run `npm install` and then `npm run db:setup` again. It updates the database rules and indexes without touching your data.
 
-**Your data stays on your laptop.** Like accounts, the inspections you record are in your own local database, and nobody else in the group sees them.
+**Changing a limit** (hazards per job, photos per hazard, text lengths): edit the number in `server/db/limits.js`, run `npm run db:setup`, then restart the API.
+
+**First start after this change:** the app deletes the job sites, hazards and photos that older versions kept in the browser (a one-time fresh start the team agreed on). Your account stays.
+
+**Your data stays on your laptop.** Like accounts, the job sites and hazards you record are in your own local database, and nobody else in the group sees them.
 
 ## Troubleshooting
 
@@ -169,9 +149,8 @@ The inspection data (job sites, inspections, hazards, photos, Summary reviews) u
 | `Access is denied` when starting the service | You're not in an administrator PowerShell. See step 2. |
 | `[vite] http proxy error ... ECONNREFUSED`, or "Can't reach the HIIPS360 server" on sign-in | The API isn't running. Use `npm run dev:all`, not `npm run dev`. If you only see this in the first second after starting, the API was still connecting and you can ignore it. |
 | `EADDRINUSE :3001` or `:5173` | An old dev server is still running. Close the other terminal. If there isn't one, find the process with `Get-NetTCPConnection -LocalPort 3001 -State Listen` and stop it with `Stop-Process -Id <OwningProcess>`. Or change `PORT` in `.env`. |
-| `npm run db:setup` says "standalone server" | MongoDB isn't a replica set yet. Do step 6. |
-| `net start MongoDB` fails after editing `mongod.cfg` | Almost always the indentation: two spaces before `replSetName`, no tabs. The exact error is at the end of `C:\Program Files\MongoDB\Server\8.0\log\mongod.log`. |
-| `rs.initiate` says `already initialized` | It's already set up. Carry on from step 6.4. |
+| A yellow "Couldn't reach the server, so this wasn't saved" bar under the header | The API stopped or restarted. Start it again (`npm run dev:all`), then redo the last change. |
+| "Loading your job sites…" never finishes, or "Couldn't load your job sites" | Same: the API isn't running or can't reach MongoDB. Start it and tap Try again. |
 | You're still signed in after the API was stopped | This is intentional. The app remembers the last signed-in user on the device so officers stay signed in with no signal. |
 
 ## Resetting your local data
@@ -182,7 +161,7 @@ To delete every account and session in **your own** local database:
 mongosh hiips360 --eval "db.users.deleteMany({}); db.sessions.deleteMany({})"
 ```
 
-To delete **all** your local data, inspections included, and start fresh:
+To delete **all** your local data, job sites and photos included, and start fresh:
 
 ```powershell
 npx mongosh hiips360 --quiet --eval "db.dropDatabase()"

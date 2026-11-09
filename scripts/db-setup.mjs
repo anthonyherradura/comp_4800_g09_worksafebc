@@ -1,8 +1,8 @@
-// Prepares MongoDB for HIIPS360: checks it can run transactions, applies every collection's validator,
-// builds the indexes, and loads the protocol sheets and checklist steps. Safe to run again at any time.
+// Prepares MongoDB for HIIPS360: applies the jobs and photos validators and builds every index.
+// Safe to run again at any time, and needed again after changing server/db/limits.js.
 //   npm run db:setup
 import mongoose from "mongoose";
-import { isReplicaSet, applySchema, loadSheets, manualSchemaControl, REPLICA_SET_HELP } from "../server/db/setup.js";
+import { applySchema, oldCollectionsPresent } from "../server/db/setup.js";
 
 const uri = process.env.MONGODB_URI;
 if (!uri) {
@@ -10,7 +10,6 @@ if (!uri) {
     process.exit(1);
 }
 
-manualSchemaControl();
 try {
     await mongoose.connect(uri, { serverSelectionTimeoutMS: 5000 });
 } catch (err) {
@@ -18,13 +17,13 @@ try {
     process.exit(1);
 }
 
-if (!(await isReplicaSet())) {
-    console.error(`MongoDB at ${uri} is a standalone server.\n${REPLICA_SET_HELP}`);
-    await mongoose.disconnect();
-    process.exit(1);
+for (const line of await applySchema()) console.log(`  ${line}`);
+
+const old = await oldCollectionsPresent();
+if (old.length) {
+    console.log(`\nThese collections are from the old database design and nothing uses them now:\n  ${old.join(", ")}`);
+    console.log(`To remove them (users and sessions are kept):\n  npx mongosh "${uri}" --quiet --eval "${old.map((n) => `db.${n}.drop()`).join("; ")}"`);
 }
 
-for (const line of await applySchema()) console.log(`  ${line}`);
-console.log("Reference data:", await loadSheets());
 await mongoose.disconnect();
 console.log("MongoDB is ready.");

@@ -98,43 +98,42 @@ test("CON-09 only hazards the sheet itself calls not typical are flagged", () =>
 });
 
 // ---------- syncSheetHazards ----------
-let counter = 0;
-const makeId = () => `h${++counter}`;
+// One job's hazards; the server (server/routes/jobs.js) gives the new ones their ids.
 const now = new Date("2026-11-02T18:00:00Z");
 const A = [{ key: "a1", name: "Hazard A1", stage: "Loading" }, { key: "a2", name: "Hazard A2", stage: null }];
 const B = [{ key: "b1", name: "Hazard B1", stage: null }];
-const sync = (hazards, jobId, sheetId, sheet) => syncSheetHazards(hazards, { jobId, sheetId, sheetHazards: sheet, makeId, now });
+let counter = 0;
+const withIds = (hazards) => hazards.map((h) => (h.id ? h : { id: `h${++counter}`, ...h }));
+const sync = (hazards, sheetId, sheet) => withIds(syncSheetHazards(hazards, { sheetId, sheetHazards: sheet, now }));
 
-test("SYNC-01 picking a sheet adds its hazards to that job, marked as from the sheet", () => {
-    const result = sync([], "job1", "sheet-a", A);
-    assert.deepEqual(result.map((h) => [h.name, h.worksiteId, h.source, h.sheetId, h.sheetKey, h.stage]), [
-        ["Hazard A1", "job1", "sheet", "sheet-a", "a1", "Loading"],
-        ["Hazard A2", "job1", "sheet", "sheet-a", "a2", null],
+test("SYNC-01 picking a sheet adds its hazards, marked as from the sheet (the stage stays on the sheet)", () => {
+    const result = sync([], "sheet-a", A);
+    assert.deepEqual(result.map((h) => [h.name, h.source, h.sheetId, h.sheetKey, h.stage]), [
+        ["Hazard A1", "sheet", "sheet-a", "a1", undefined],
+        ["Hazard A2", "sheet", "sheet-a", "a2", undefined],
     ]);
-    assert.ok(result.every((h) => h.comment === "" && h.photoIds.length === 0 && !h.notApplicable));
+    assert.ok(result.every((h) => h.comment === "" && h.photoIds.length === 0 && !h.notApplicable && h.createdAt === now));
 });
 
 test("SYNC-02 picking the same sheet again adds nothing", () => {
-    const once = sync([], "job1", "sheet-a", A);
-    assert.equal(sync(once, "job1", "sheet-a", A).length, 2);
+    const once = sync([], "sheet-a", A);
+    assert.deepEqual(sync(once, "sheet-a", A), once);
 });
 
 test("SYNC-03 changing sheet: untouched old hazards go, worked-on ones and the officer's own stay", () => {
-    const start = sync([], "job1", "sheet-a", A);
-    const [a1, a2] = start;
-    const own = { id: "own", worksiteId: "job1", name: "Loose ladder", comment: "", photoIds: [], notApplicable: false };
-    const worked = [{ ...a1, comment: "Seen at gate" }, a2, own];
-
-    const result = sync(worked, "job1", "sheet-b", B);
+    const [a1, a2] = sync([], "sheet-a", A);
+    const own = { id: "own", source: "officer", name: "Loose ladder", comment: "", photoIds: [], notApplicable: false };
+    const result = sync([{ ...a1, comment: "Seen at gate" }, a2, own], "sheet-b", B);
     assert.deepEqual(result.map((h) => h.name), ["Hazard A1", "Loose ladder", "Hazard B1"]);
 });
 
-test("SYNC-04 photos or not applicable also count as work, and other jobs are never touched", () => {
-    const job1 = sync([], "job1", "sheet-a", A);
-    const job2 = sync([], "job2", "sheet-a", A);
-    const marked = [{ ...job1[0], photoIds: ["p1"] }, { ...job1[1], notApplicable: true }, ...job2];
+test("SYNC-04 photos or not applicable also count as work; clearing the sheet keeps them", () => {
+    const [a1, a2] = sync([], "sheet-a", A);
+    const cleared = sync([{ ...a1, photoIds: ["p1"] }, { ...a2, notApplicable: true }], null, []);
+    assert.equal(cleared.length, 2);
+});
 
-    const cleared = sync(marked, "job1", null, []);
-    assert.equal(cleared.length, 4);
-    assert.equal(cleared.filter((h) => h.worksiteId === "job2").length, 2);
+test("SYNC-05 a comment of only spaces doesn't count as work", () => {
+    const [a1] = sync([], "sheet-a", A.slice(0, 1));
+    assert.deepEqual(sync([{ ...a1, comment: "   " }], null, []), []);
 });

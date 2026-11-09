@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../auth/useAuth";
-import { useHazards } from "../../context/HazardContext";
 import { useJobs } from "../../context/JobContext";
 import { SHEET_CATALOG, getSheetChecklist, getSheetHazards } from "../../data/sheets";
 import { matchesWords } from "../../data/sheets/catalog";
 import { shrinkImage } from "../../data/store";
-import usePersistentState from "../../hooks/usePersistentState";
+import useRecentSheets from "../../hooks/useRecentSheets";
 import { CameraPlusIcon } from "../Hazard/HazardIcons";
 import { matchSheets } from "./matchSheets";
 import "./Homepage.css";
@@ -80,18 +79,14 @@ function SheetOption({ sheet, reason, selected, onPick }) {
 // PRD: reach the sheet for the work, and confirm or change the one offered.
 export default function HomePage() {
     const { currentJob, setJobSheet } = useJobs();
-    const { applySheet } = useHazards();
     const [query, setQuery] = useState("");
     const [ai, setAi] = useState({ status: "idle" }); // idle | loading | done | error
-    // Sheet ids, most recently viewed first. Saved on the device.
+    // Sheet ids, most recently viewed first. Saved on the officer's account.
     const { user } = useAuth();
     const requestId = useRef(0);
 
     const email = user?.email?.trim().toLowerCase();
-    const [recentIds, setRecentIds, recentLoaded] = usePersistentState(
-        email ? `hiips360.recentSheets.${email}` : null,
-        []
-    );
+    const [recentIds, remember, recentLoaded] = useRecentSheets(email, MAX_RECENT);
     const selected = byId[currentJob?.sheetId] ?? null;
 
     const q = query.trim();
@@ -105,10 +100,6 @@ export default function HomePage() {
     // So every sheet can still be browsed once there are recent ones
     const otherSheets = hasRecent ? SHEET_CATALOG.filter((s) => !recentSheets.includes(s)) : [];
 
-    function remember(sheetId) {
-        setRecentIds((prev) => [sheetId, ...prev.filter((id) => id !== sheetId)].slice(0, MAX_RECENT));
-    }
-
     // A job that already has a sheet counts as viewed, so the list is not empty for it.
     const selectedId = selected?.sheetId;
     useEffect(() => {
@@ -118,8 +109,7 @@ export default function HomePage() {
     // Picking a sheet fills the job's hazard list from it (and the Planning checklist reads it too)
     function pick(sheetId) {
         const next = sheetId === selected?.sheetId ? null : sheetId;
-        setJobSheet(currentJob.id, next);
-        applySheet(currentJob.id, next);
+        setJobSheet(currentJob.id, next); // the server loads the sheet's hazards in the same save
         if (next) remember(next);
     }
 
@@ -337,4 +327,4 @@ export default function HomePage() {
             </div>
         </div>
     );
-}
+}

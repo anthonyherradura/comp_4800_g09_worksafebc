@@ -49,7 +49,7 @@ const NAV_ITEMS = [
 // showNav: false for job selection (/jobs), which is its own page outside the regular navigation
 export default function Layout({ showNav = true }) {
     const { logout } = useAuth();
-    const { currentJob } = useJobs();
+    const { currentJob, saveError, clearSaveError } = useJobs();
     const navigate = useNavigate();
 
     const handleSignOut = async () => {
@@ -76,6 +76,16 @@ export default function Layout({ showNav = true }) {
                     </button>
                 </header>
 
+                {/* A save that didn't reach the server. Inline under the header, so it never covers a button. */}
+                {saveError && (
+                    <div className="save-error" role="alert">
+                        <p>{saveError}</p>
+                        <button type="button" className="save-error-close" onClick={clearSaveError}>
+                            Dismiss
+                        </button>
+                    </div>
+                )}
+
                 {/* The current page renders here */}
 
                 <main className="page">
@@ -100,4 +110,4 @@ export default function Layout({ showNav = true }) {
             </div>
         </div>
     );
-}
+}

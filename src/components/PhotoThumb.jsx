@@ -1,23 +1,6 @@
-import { useEffect, useState } from "react";
-import { loadPhoto } from "../data/store";
+import { photoUrl } from "../data/api";
 
+// A saved photo, served by the API (only to the officer who took it)
 export default function PhotoThumb({ id, alt = "Inspection photo" }) {
-    const [url, setUrl] = useState(null);
-
-    useEffect(() => {
-        let alive = true;
-        let objectUrl;
-        loadPhoto(id).then((blob) => {
-            if (alive && blob) {
-                objectUrl = URL.createObjectURL(blob);
-                setUrl(objectUrl);
-            }
-        });
-        return () => {
-            alive = false;
-            if (objectUrl) URL.revokeObjectURL(objectUrl);
-        };
-    }, [id]);
-
-    return url ? <img src={url} alt={alt} style={{ maxWidth: "100%" }} /> : null;
+    return <img src={photoUrl(id)} alt={alt} style={{ maxWidth: "100%" }} />;
 }

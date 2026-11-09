@@ -228,3 +228,50 @@
     outline: 3px solid var(--wsbc-white);
     outline-offset: -3px;
 }
+/* A save that didn't reach the server (JobContext saveError) */
+.save-error {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    background: var(--wsbc-pale-sunrise-yellow);
+    color: var(--wsbc-bodycopy);
+    border-bottom: 2px solid var(--wsbc-huckleberry-red);
+}
+
+.save-error p {
+    flex: 1;
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.save-error-close {
+    min-height: 44px;
+    padding: 0 12px;
+    border: 2px solid var(--wsbc-iron-grey);
+    border-radius: 4px;
+    background: var(--wsbc-white);
+    color: var(--wsbc-iron-grey);
+    font: inherit;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+/* Shown by JobProvider while the job sites load, or when they couldn't */
+.load-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    min-height: 100vh;
+    padding: 24px 16px;
+    background: var(--wsbc-ash-grey);
+    color: var(--wsbc-bodycopy);
+    text-align: center;
+}
+
+.load-state p {
+    margin: 0;
+    max-width: 32rem;
+}

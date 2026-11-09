@@ -1,94 +1,225 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import useAuth from "../auth/useAuth";
+import { api, createSaveQueue } from "../data/api";
 
 const JobContext = createContext(null);
 
-const makeId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+// Job sites are saved in MongoDB through the API (server/routes/jobs.js), so each officer sees only their own,
+// on any device. `jobs` is the list (newest opened first, no hazards); `currentJob` is the full first one,
+// with its sheet, checklist, visit notes and hazards. HazardContext reads and changes the hazards through here.
+//
+// Saves that wait for typing to pause share one queue (`saveQueue`), and every other change flushes it first,
+// so changes reach the server in the order the officer made them.
 
-// Jobs are saved per signed-in user so each officer sees only their own job sites.
-// Stored in localStorage for now; when the backend has a Job model, only this file needs to change.
-const storageKey = (userId) => `hiips360.jobs.${userId || "anonymous"}`;
-
-function load(userId) {
-    try {
-        const saved = JSON.parse(localStorage.getItem(storageKey(userId)));
-        return Array.isArray(saved) ? saved : [];
-    } catch {
-        return [];
-    }
-}
-
-function save(userId, jobs) {
-    try {
-        localStorage.setItem(storageKey(userId), JSON.stringify(jobs));
-    } catch {
-        // Storage can be blocked or full. The list still works for this session.
-    }
-}
+const summary = ({ id, label, sheetId, lastOpenedAt, createdAt, updatedAt }) => ({ id, label, sheetId, lastOpenedAt, createdAt, updatedAt });
+const newestFirst = (list) => [...list].sort((a, b) => String(b.lastOpenedAt).localeCompare(String(a.lastOpenedAt)));
 
 export function JobProvider({ children }) {
-    const { user } = useAuth();
-    const userId = user?.email?.toLowerCase();
+    const { user, logout } = useAuth();
+    const email = user?.email?.toLowerCase();
 
-    const [jobs, setJobs] = useState(() => load(userId));
-    const [loadedFor, setLoadedFor] = useState(userId);
-
-    // Reload when a different user signs in (adjust state during render, per React docs).
-    if (loadedFor !== userId) {
-        setLoadedFor(userId);
-        setJobs(load(userId));
-    }
-
+    const [jobs, setJobs] = useState([]);
+    const [currentJob, setCurrentJob] = useState(null);
+    const [status, setStatus] = useState("loading"); // loading | ready | error
+    const [saveError, setSaveError] = useState("");
+    const [checklistDrafts, setChecklistDrafts] = useState({}); // itemId -> status not yet confirmed by the server
+    const saveQueue = useMemo(() => createSaveQueue(), []);
+    const loadId = useRef(0);
+    const logoutRef = useRef(logout);
     useEffect(() => {
-        save(loadedFor, jobs);
-    }, [loadedFor, jobs]);
+        logoutRef.current = logout;
+    }, [logout]);
+
+    const reportError = useCallback((err) => {
+        if (err?.status === 401) {
+            logoutRef.current(); // the session ran out: back to sign in
+            return;
+        }
+        setSaveError(err?.message || "Couldn't save. Try again.");
+    }, []);
+
+    // The server's copy of the current job replaces ours, and the list entry follows it
+    const replaceCurrentJob = useCallback((job) => {
+        setCurrentJob(job);
+        if (job) setJobs((list) => newestFirst([summary(job), ...list.filter((j) => j.id !== job.id)]));
+    }, []);
+
+    // Reads the job list and the current job. Ignores the answer if a newer load started meanwhile.
+    const load = useCallback(() => {
+        const id = ++loadId.current;
+        const fresh = () => id === loadId.current;
+        return api("GET", "/jobs")
+            .then(async ({ jobs: list }) => {
+                const full = list[0] ? (await api("GET", `/jobs/${list[0].id}`)).job : null;
+                if (!fresh()) return;
+                setJobs(list);
+                setCurrentJob(full);
+                setStatus("ready");
+            })
+            .catch((err) => {
+                if (!fresh()) return;
+                if (err.status === 401) return reportError(err);
+                setSaveError(err.message);
+                setStatus("error");
+            });
+    }, [reportError]);
+
+    // Start again whenever a different officer signs in (adjust state during render, per React docs)
+    const [loadedFor, setLoadedFor] = useState(email);
+    if (loadedFor !== email) {
+        setLoadedFor(email);
+        setJobs([]);
+        setCurrentJob(null);
+        setChecklistDrafts({});
+        setStatus("loading");
+    }
+    useEffect(() => {
+        if (email) load();
+    }, [email, load]);
+
+    // Send waiting saves when the page is hidden or closed
+    useEffect(() => {
+        const flush = () => saveQueue.flush();
+        window.addEventListener("pagehide", flush);
+        document.addEventListener("visibilitychange", flush);
+        return () => {
+            window.removeEventListener("pagehide", flush);
+            document.removeEventListener("visibilitychange", flush);
+        };
+    }, [saveQueue]);
+
+    const reloadCurrentJob = useCallback(async () => {
+        if (!currentJob) return;
+        try {
+            replaceCurrentJob((await api("GET", `/jobs/${currentJob.id}`)).job);
+        } catch (err) {
+            reportError(err);
+        }
+    }, [currentJob, replaceCurrentJob, reportError]);
+
+    // Runs a change after everything waiting has been saved. Resolves to the change's result, or null if it failed.
+    const change = useCallback(
+        async (run) => {
+            await saveQueue.flush();
+            try {
+                return await run();
+            } catch (err) {
+                reportError(err);
+                return null;
+            }
+        },
+        [saveQueue, reportError],
+    );
 
     // `label` is whatever the officer typed: a site name ("Oak St. tower") or an address ("123 Main St").
-    // Re-adding an existing label reopens that job instead of creating a duplicate.
+    // Re-adding an existing label (any case) reopens that job instead of creating a duplicate.
     const addJob = (label) => {
-        const clean = label.trim().replace(/\s+/g, " ");
-        if (!clean) return null;
-
-        const existing = jobs.find((j) => j.label.toLowerCase() === clean.toLowerCase());
-        if (existing) {
-            openJob(existing.id);
-            return existing.id;
-        }
-
-        const now = new Date().toISOString();
-        const job = { id: makeId(), label: clean, createdAt: now, lastOpenedAt: now };
-        setJobs((prev) => [job, ...prev]);
-        return job.id;
+        if (!label.trim()) return Promise.resolve(null);
+        return change(async () => {
+            const { job } = await api("POST", "/jobs", { label });
+            replaceCurrentJob(job);
+            return job.id;
+        });
     };
 
     const openJob = (id) =>
-        setJobs((prev) =>
-            prev.map((j) => (j.id === id ? { ...j, lastOpenedAt: new Date().toISOString() } : j))
-        );
+        change(async () => {
+            const { job } = await api("POST", `/jobs/${id}/open`);
+            replaceCurrentJob(job);
+            return job.id;
+        });
 
-    const deleteJob = (id) => setJobs((prev) => prev.filter((j) => j.id !== id));
+    // Deletes the job site with its hazards and photos
+    const deleteJob = (id) =>
+        change(async () => {
+            await api("DELETE", `/jobs/${id}`);
+            const rest = jobs.filter((j) => j.id !== id);
+            setJobs(rest);
+            if (currentJob?.id === id) setCurrentJob(rest[0] ? (await api("GET", `/jobs/${rest[0].id}`)).job : null);
+            return true;
+        });
 
-    // The protocol sheet the officer picked for this job (a sheetId from data/sheets, or null)
+    // Picks, changes or clears (null) the job's protocol sheet. The server syncs the hazards in the same save.
     const setJobSheet = (id, sheetId) =>
-        setJobs((prev) => prev.map((j) => (j.id === id ? { ...j, sheetId } : j)));
+        change(async () => {
+            const { job } = await api("PUT", `/jobs/${id}/sheet`, { sheetId });
+            replaceCurrentJob(job);
+            return job.id;
+        });
 
-    // Planning checklist progress for this job: item id (from the sheet) -> "pending" | "ready" | "not-applicable"
-    const setChecklistStatus = (id, itemId, status) =>
-        setJobs((prev) =>
-            prev.map((j) => (j.id === id ? { ...j, checklist: { ...j.checklist, [itemId]: status } } : j))
+    // Planning checklist: item id (from the sheet) -> "pending" | "ready" | "not-applicable".
+    // Shown at once; the server's answer only confirms it.
+    const setChecklistStatus = (id, itemId, status) => {
+        setChecklistDrafts((d) => ({ ...d, [itemId]: status }));
+        change(async () => {
+            const { job } = await api("PUT", `/jobs/${id}/checklist/${encodeURIComponent(itemId)}`, { status });
+            replaceCurrentJob(job);
+            return job.id;
+        }).then((ok) => {
+            setChecklistDrafts((d) => {
+                if (d[itemId] !== status) return d; // a newer tap is on its way
+                const next = { ...d };
+                delete next[itemId];
+                return next;
+            });
+            if (!ok) reloadCurrentJob();
+        });
+    };
+
+    // Visit notes save once typing pauses
+    const saveVisitNotes = (id, visitNotes) =>
+        saveQueue.schedule(`notes:${id}`, () =>
+            api("PUT", `/jobs/${id}/visit-notes`, { visitNotes }, { keepalive: true }).catch(reportError),
         );
 
-    // Most recently used first
-    const sorted = [...jobs].sort((a, b) => b.lastOpenedAt.localeCompare(a.lastOpenedAt));
-    const currentJob = sorted[0] ?? null;
+    // What the pages see: the server's job with checklist taps that are still on their way
+    const shownJob = useMemo(() => {
+        if (!currentJob || !Object.keys(checklistDrafts).length) return currentJob;
+        const checklist = { ...currentJob.checklist };
+        for (const [itemId, s] of Object.entries(checklistDrafts)) {
+            if (s === "pending") delete checklist[itemId];
+            else checklist[itemId] = s;
+        }
+        return { ...currentJob, checklist };
+    }, [currentJob, checklistDrafts]);
 
-    return (
-        <JobContext.Provider
-            value={{ jobs: sorted, currentJob, addJob, openJob, deleteJob, setJobSheet, setChecklistStatus }}
-        >
-            {children}
-        </JobContext.Provider>
-    );
+    const value = {
+        jobs,
+        currentJob: shownJob,
+        addJob,
+        openJob,
+        deleteJob,
+        setJobSheet,
+        setChecklistStatus,
+        saveVisitNotes,
+        saveError,
+        clearSaveError: () => setSaveError(""),
+        // for HazardContext
+        saveQueue,
+        change,
+        replaceCurrentJob,
+        reloadCurrentJob,
+        reportError,
+    };
+
+    if (status !== "ready") {
+        return (
+            <div className="load-state" role={status === "error" ? "alert" : "status"}>
+                {status === "loading" ? (
+                    <p>Loading your job sites…</p>
+                ) : (
+                    <>
+                        <p>{saveError || "Couldn't load your job sites."}</p>
+                        <button type="button" className="btn btn-orange" onClick={() => { setSaveError(""); setStatus("loading"); load(); }}>
+                            Try again
+                        </button>
+                    </>
+                )}
+            </div>
+        );
+    }
+
+    return <JobContext.Provider value={value}>{children}</JobContext.Provider>;
 }
 
 // eslint-disable-next-line react-refresh/only-export-components

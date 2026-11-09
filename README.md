@@ -141,7 +141,7 @@ The app shell, sign-in and offline install are in place. The inspection flow its
 | Planning (`/planning`) | Page component exists, placeholder text only |
 | HIIPS content (sheets, hazards, controls, regulations) | Not modelled yet; no seed data |
 | Photo matching | Not started |
-| Saving inspections (hazards, photos, job sites) in MongoDB | Not built. Hazards are in memory and job sites are in localStorage |
+| Saving inspections (hazards, photos, job sites) in MongoDB | Built (Nov 2026): job sites, hazards, photos, checklist, visit notes and recent sheets are saved per officer through `/api/jobs`, `/api/photos` and `/api/me` |
 | On-device inspection storage (Dexie/IndexedDB) | Deferred; see [Design principles](#design-principles) |
 | `wsbc.css` / Bootstrap | Not installed; styling uses the local tokens for now |
 | Automated tests for the rest of the app | Only the AI feature has them; auth and the pages are still tested by hand (see the Testing Log) |

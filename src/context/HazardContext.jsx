@@ -1,13 +1,9 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
-import usePersistentState from "../hooks/usePersistentState";
-import { loadPhoto, newId, removePhoto, savePhoto, shrinkImage } from "../data/store";
-import { getSheetHazards } from "../data/sheets";
-import { syncSheetHazards } from "../data/syncSheetHazards";
+import { createContext, useContext, useMemo, useRef, useState } from "react";
+import { api, photoUrl } from "../data/api";
+import { shrinkImage } from "../data/store";
 import { useJobs } from "./JobContext";
 
 const HazardContext = createContext(null);
-
-const makeId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
 // Accepts a File, a Blob, or a blob: / data: URL string.
 async function toBlob(input) {
@@ -15,121 +11,131 @@ async function toBlob(input) {
     return (await fetch(input)).blob();
 }
 
-// Hazards are saved on the device (IndexedDB), and each photo is saved as its own record.
-// When the backend is ready, only this file needs to change.
-// Each hazard belongs to a job (worksiteId = job id); the pages only see the current job's hazards.
+// The current job's hazards, saved in MongoDB through the API (server/routes/jobs.js). They live inside the
+// job document, so they come from JobContext's currentJob, and every change answers with the updated job.
+// Photos are uploaded (shrunk first) and shown from /api/photos/<id>.
+//
+// Comment edits show at once and save when typing pauses. Until the server confirms them they are kept
+// as drafts on top of the job, so another change's answer can't put old text back in the box.
 export function HazardProvider({ children }) {
-    const { currentJob } = useJobs();
+    const { currentJob, saveQueue, change, replaceCurrentJob, reloadCurrentJob, reportError } = useJobs();
     const jobId = currentJob?.id ?? null;
-    const [stored, setHazards, loaded] = usePersistentState("hiips360.hazards", []);
-    const [urls, setUrls] = useState({}); // photo id -> URL the browser can show
-    const urlsRef = useRef(urls);
-    urlsRef.current = urls;
-    const pending = useRef(new Set());
+    const [drafts, setDrafts] = useState({}); // hazard id -> { comment?, notApplicable? } not yet confirmed
+    const unsent = useRef({}); // hazard id -> fields waiting in the save queue
 
-    // After a reload, read each saved photo back from storage and make a URL for it.
-    useEffect(() => {
-        if (!loaded) return;
-        stored.forEach((h) =>
-            (h.photoIds ?? []).forEach((pid) => {
-                if (urlsRef.current[pid] || pending.current.has(pid)) return;
-                pending.current.add(pid);
-                loadPhoto(pid).then((blob) => {
-                    pending.current.delete(pid);
-                    if (blob) setUrls((u) => ({ ...u, [pid]: URL.createObjectURL(blob) }));
-                });
-            })
-        );
-    }, [stored, loaded]);
-
-    // What the rest of the app sees: the current job's hazards with a photos list of URLs.
-    // Hazards saved before jobs existed have no worksiteId; they still show so nothing is lost.
+    // What the pages see: hazards with drafts applied and a photos list of URLs
     const hazards = useMemo(
         () =>
-            stored
-                .filter((h) => h.worksiteId == null || h.worksiteId === jobId)
-                .map((h) => ({ ...h, photos: (h.photoIds ?? []).map((id) => urls[id]).filter(Boolean) })),
-        [stored, urls, jobId]
+            (currentJob?.hazards ?? []).map((h) => ({
+                ...h,
+                ...drafts[h.id],
+                photos: h.photoIds.map(photoUrl),
+            })),
+        [currentJob, drafts],
     );
 
-    const dropPhoto = (pid) => {
-        removePhoto(pid);
-        if (urls[pid]) URL.revokeObjectURL(urls[pid]);
-        setUrls((u) => {
-            const next = { ...u };
-            delete next[pid];
+    // Drops the draft fields the server now has (unless they were typed over again since)
+    const settle = (id, sent) =>
+        setDrafts((all) => {
+            const draft = { ...all[id] };
+            for (const [field, value] of Object.entries(sent)) if (draft[field] === value) delete draft[field];
+            const next = { ...all };
+            if (Object.keys(draft).length) next[id] = draft;
+            else delete next[id];
             return next;
         });
-    };
 
-    const addPhotos = async (id, inputs) => {
-        const newIds = [];
-        for (const input of inputs) {
-            try {
-                const original = await toBlob(input);
-                const small = (await shrinkImage(original).catch(() => original)) || original;
-                const photoId = newId();
-                await savePhoto(photoId, small);
-                setUrls((u) => ({ ...u, [photoId]: URL.createObjectURL(small) }));
-                newIds.push(photoId);
-            } catch {
-                // skip a photo that cannot be read
+    const forget = (id) =>
+        setDrafts((all) => {
+            const next = { ...all };
+            delete next[id];
+            return next;
+        });
+
+    const addPhotos = (id, inputs) =>
+        change(async () => {
+            const body = new FormData();
+            for (const input of inputs) {
+                try {
+                    const original = await toBlob(input);
+                    const small = (await shrinkImage(original).catch(() => original)) || original;
+                    body.append("photos", small, "photo.jpg");
+                } catch {
+                    // skip a photo that cannot be read
+                }
             }
-        }
-        if (newIds.length) {
-            setHazards((prev) =>
-                prev.map((h) => (h.id === id ? { ...h, photoIds: [...(h.photoIds ?? []), ...newIds] } : h))
-            );
-        }
-    };
+            if (!body.has("photos")) return null;
+            const { job } = await api("POST", `/jobs/${jobId}/hazards/${id}/photos`, body);
+            replaceCurrentJob(job);
+            return id;
+        });
 
-    const addHazard = ({ name, photo, comment = "" }) => {
-        const id = makeId();
-        setHazards((prev) => [
-            ...prev,
-            {
-                id,
-                worksiteId: jobId,
-                name,
-                comment,
-                photoIds: [],
-                notApplicable: false,
-                createdAt: new Date().toISOString(),
-            },
-        ]);
-        if (photo) addPhotos(id, [photo]);
+    // Resolves to the new hazard's id, or null if it couldn't be saved
+    const addHazard = async ({ name, photo, comment = "" }) => {
+        const id = await change(async () => {
+            const { job, hazardId } = await api("POST", `/jobs/${jobId}/hazards`, { name, comment });
+            replaceCurrentJob(job);
+            return hazardId;
+        });
+        if (id && photo) await addPhotos(id, [photo]);
         return id;
     };
 
+    // changes: { comment?, notApplicable?, photos? }. A photos list means "keep only these", so photos missing
+    // from it are deleted.
     const updateHazard = (id, changes) => {
-        const { photos, ...rest } = changes;
-        const current = stored.find((h) => h.id === id);
-        let photoIds;
-        if (photos && current) {
-            // A photos list means "keep only these", so photos missing from it are deleted.
-            const ids = current.photoIds ?? [];
-            photoIds = ids.filter((pid) => photos.includes(urls[pid]));
-            ids.filter((pid) => !photoIds.includes(pid)).forEach(dropPhoto);
+        const { photos, ...fields } = changes;
+        const hazard = hazards.find((h) => h.id === id);
+
+        if (Object.keys(fields).length) {
+            setDrafts((all) => ({ ...all, [id]: { ...all[id], ...fields } }));
+            unsent.current[id] = { ...unsent.current[id], ...fields };
+            const key = `hazard:${jobId}:${id}`;
+            const url = `/jobs/${jobId}/hazards/${id}`;
+            saveQueue.schedule(key, () => {
+                const sent = unsent.current[id];
+                delete unsent.current[id];
+                return api("PATCH", url, sent, { keepalive: true })
+                    .then(({ job }) => {
+                        // The server's job has this save; drafts typed since stay on top of it
+                        replaceCurrentJob(job);
+                        settle(id, sent);
+                    })
+                    .catch((err) => {
+                        forget(id);
+                        reportError(err);
+                        reloadCurrentJob();
+                    });
+            });
+            // Typing waits for a pause; a button press (not applicable) saves now
+            if (!("comment" in fields)) saveQueue.send(key);
         }
-        setHazards((prev) =>
-            prev.map((h) => (h.id === id ? { ...h, ...rest, ...(photoIds ? { photoIds } : {}) } : h))
-        );
+
+        if (photos && hazard) {
+            const removed = hazard.photoIds.filter((pid) => !photos.includes(photoUrl(pid)));
+            if (removed.length) {
+                change(async () => {
+                    for (const pid of removed) {
+                        const { job } = await api("DELETE", `/jobs/${jobId}/hazards/${id}/photos/${pid}`);
+                        replaceCurrentJob(job);
+                    }
+                    return id;
+                });
+            }
+        }
     };
 
-    // Called when the officer picks, changes or clears a job's protocol sheet (sheetId null to clear)
-    const applySheet = (forJobId, sheetId) =>
-        setHazards((prev) =>
-            syncSheetHazards(prev, { jobId: forJobId, sheetId, sheetHazards: getSheetHazards(sheetId), makeId })
-        );
-
-    const deleteHazard = (id) => {
-        stored.find((h) => h.id === id)?.photoIds?.forEach(dropPhoto);
-        setHazards((prev) => prev.filter((h) => h.id !== id));
-    };
+    const deleteHazard = (id) =>
+        change(async () => {
+            const { job } = await api("DELETE", `/jobs/${jobId}/hazards/${id}`);
+            forget(id);
+            replaceCurrentJob(job);
+            return id;
+        });
 
     return (
-        <HazardContext.Provider value={{ hazards, addHazard, updateHazard, addPhotos, deleteHazard, applySheet }}>
-            {loaded ? children : null}
+        <HazardContext.Provider value={{ hazards, addHazard, updateHazard, addPhotos, deleteHazard }}>
+            {children}
         </HazardContext.Provider>
     );
 }
