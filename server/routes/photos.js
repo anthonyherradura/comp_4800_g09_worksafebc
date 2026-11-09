@@ -1,5 +1,7 @@
 // GET /api/photos/:photoId -> the image. Only its owner gets it; anyone else gets 404.
-// Photos never change once saved (a new photo gets a new id), so the browser may keep its copy.
+// The browser may keep a copy, but must ask here every time (no-cache), so a shared device can't show one
+// officer's photo to another, or a deleted photo. A photo never changes, so its id is its ETag and a repeat
+// view by its owner answers 304 without sending the image again.
 import { Router } from "express";
 import requireAuth from "../middleware/requireAuth.js";
 import Photo from "../models/Photo.js";
@@ -15,9 +17,11 @@ router.get("/:photoId", async (req, res) => {
     res.set({
         "Content-Type": photo.contentType,
         "Content-Length": photo.data.length,
-        "Cache-Control": "private, max-age=31536000, immutable",
+        "Cache-Control": "private, no-cache",
+        ETag: `"${photo.id}"`,
         "X-Content-Type-Options": "nosniff",
     });
+    if (req.fresh) return res.status(304).end();
     res.end(photo.data);
 });
 

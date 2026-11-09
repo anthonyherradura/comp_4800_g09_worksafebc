@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import useAuth from "../auth/useAuth";
-import { api, createSaveQueue } from "../data/api";
+import { api, createSaveQueue, isTemporaryFailure } from "../data/api";
 
 const JobContext = createContext(null);
 
@@ -23,6 +23,7 @@ export function JobProvider({ children }) {
     const [status, setStatus] = useState("loading"); // loading | ready | error
     const [saveError, setSaveError] = useState("");
     const [checklistDrafts, setChecklistDrafts] = useState({}); // itemId -> status not yet confirmed by the server
+    const [notesDrafts, setNotesDrafts] = useState({}); // job id -> visit notes not yet confirmed by the server
     const saveQueue = useMemo(() => createSaveQueue(), []);
     const loadId = useRef(0);
     const logoutRef = useRef(logout);
@@ -43,6 +44,17 @@ export function JobProvider({ children }) {
         setCurrentJob(job);
         if (job) setJobs((list) => newestFirst([summary(job), ...list.filter((j) => j.id !== job.id)]));
     }, []);
+
+    // Takes the answer to a save from the queue. A retry can land after the officer has opened another job,
+    // so this never changes which job is current. The error message goes once nothing is left to save.
+    const confirmSavedJob = useCallback(
+        (job) => {
+            setCurrentJob((current) => (current?.id === job.id ? job : current));
+            setJobs((list) => list.map((j) => (j.id === job.id ? summary(job) : j)));
+            if (!saveQueue.hasWaiting()) setSaveError("");
+        },
+        [saveQueue],
+    );
 
     // Reads the job list and the current job. Ignores the answer if a newer load started meanwhile.
     const load = useCallback(() => {
@@ -71,6 +83,7 @@ export function JobProvider({ children }) {
         setJobs([]);
         setCurrentJob(null);
         setChecklistDrafts({});
+        setNotesDrafts({});
         setStatus("loading");
     }
     useEffect(() => {
@@ -85,6 +98,7 @@ export function JobProvider({ children }) {
         return () => {
             window.removeEventListener("pagehide", flush);
             document.removeEventListener("visibilitychange", flush);
+            saveQueue.clear(); // signed out: a retry must not run in the next officer's session
         };
     }, [saveQueue]);
 
@@ -102,7 +116,9 @@ export function JobProvider({ children }) {
         async (run) => {
             await saveQueue.flush();
             try {
-                return await run();
+                const result = await run();
+                if (!saveQueue.hasWaiting()) setSaveError("");
+                return result;
             } catch (err) {
                 reportError(err);
                 return null;
@@ -166,22 +182,45 @@ export function JobProvider({ children }) {
         });
     };
 
-    // Visit notes save once typing pauses
-    const saveVisitNotes = (id, visitNotes) =>
-        saveQueue.schedule(`notes:${id}`, () =>
-            api("PUT", `/jobs/${id}/visit-notes`, { visitNotes }, { keepalive: true }).catch(reportError),
-        );
+    // Drops a notes draft the server now has (unless it was typed over again since)
+    const settleNotes = (id, visitNotes) =>
+        setNotesDrafts((d) => {
+            if (d[id] !== visitNotes) return d;
+            const next = { ...d };
+            delete next[id];
+            return next;
+        });
 
-    // What the pages see: the server's job with checklist taps that are still on their way
+    // Visit notes show at once and save once typing pauses. If the save fails they stay on screen.
+    const saveVisitNotes = (id, visitNotes) => {
+        setNotesDrafts((d) => ({ ...d, [id]: visitNotes }));
+        const key = `notes:${id}`;
+        const save = () =>
+            api("PUT", `/jobs/${id}/visit-notes`, { visitNotes }, { keepalive: true })
+                .then(({ job }) => {
+                    confirmSavedJob(job);
+                    settleNotes(id, visitNotes);
+                })
+                .catch((err) => {
+                    if (err.status === 404) settleNotes(id, visitNotes); // the job is gone
+                    reportError(err);
+                    if (isTemporaryFailure(err)) saveQueue.retryLater(key, save);
+                });
+        saveQueue.schedule(key, save);
+    };
+
+    // What the pages see: the server's job with checklist taps and visit notes that are still on their way
     const shownJob = useMemo(() => {
-        if (!currentJob || !Object.keys(checklistDrafts).length) return currentJob;
+        if (!currentJob) return currentJob;
+        const notes = notesDrafts[currentJob.id];
+        if (!Object.keys(checklistDrafts).length && notes === undefined) return currentJob;
         const checklist = { ...currentJob.checklist };
         for (const [itemId, s] of Object.entries(checklistDrafts)) {
             if (s === "pending") delete checklist[itemId];
             else checklist[itemId] = s;
         }
-        return { ...currentJob, checklist };
-    }, [currentJob, checklistDrafts]);
+        return { ...currentJob, checklist, visitNotes: notes ?? currentJob.visitNotes };
+    }, [currentJob, checklistDrafts, notesDrafts]);
 
     const value = {
         jobs,
@@ -198,6 +237,7 @@ export function JobProvider({ children }) {
         saveQueue,
         change,
         replaceCurrentJob,
+        confirmSavedJob,
         reloadCurrentJob,
         reportError,
     };

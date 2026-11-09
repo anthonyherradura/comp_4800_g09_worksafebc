@@ -46,11 +46,11 @@ after(async () => {
 // A signed-in officer: a fetch that keeps its session cookie
 async function officer(name = "Officer") {
     let cookie = "";
-    const call = async (method, path, body) => {
+    const call = async (method, path, body, headers) => {
         const isForm = body instanceof FormData;
         const res = await fetch(base + path, {
             method,
-            headers: { ...(cookie && { cookie }), ...(body && !isForm && { "content-type": "application/json" }) },
+            headers: { ...headers, ...(cookie && { cookie }), ...(body && !isForm && { "content-type": "application/json" }) },
             body: body ? (isForm ? body : JSON.stringify(body)) : undefined,
         });
         const set = res.headers.get("set-cookie");
@@ -379,6 +379,32 @@ test("DB-20 photos: upload, read back the same bytes, delete one", { skip }, asy
     assert.deepEqual(del.data.job.hazards[0].photoIds, [p2]);
     assert.equal((await call("GET", `/photos/${p1}`)).status, 404);
     assert.equal(await Photo.countDocuments({ hazardId: id }), 1);
+});
+
+test("DB-20b the browser must ask the server for every photo view, so its cache can't bypass ownership", { skip }, async () => {
+    const owner = await officer("Owner");
+    const other = await officer("Other");
+    const job = await newJob(owner);
+    const id = (await owner("POST", `/jobs/${job.id}/hazards`, { name: "Ladder" })).data.hazardId;
+    const up = await owner("POST", `/jobs/${job.id}/hazards/${id}/photos`, photoForm(1, { bytes: 4096 }));
+    const [photoId] = up.data.job.hazards[0].photoIds;
+
+    const first = await owner("GET", `/photos/${photoId}`);
+    const cacheControl = first.headers.get("cache-control");
+    assert.match(cacheControl, /no-cache/);
+    assert.doesNotMatch(cacheControl, /max-age|immutable/);
+    const etag = first.headers.get("etag");
+    assert.ok(etag, "an ETag lets the owner's repeat views skip the download");
+
+    // What a browser sends when it checks its copy. Without the cache-control, Node's fetch adds no-cache for a full reload.
+    const repeat = await owner("GET", `/photos/${photoId}`, undefined, { "if-none-match": etag, "cache-control": "max-age=0" });
+    assert.equal(repeat.status, 304);
+    assert.equal(repeat.data.length, 0);
+
+    assert.equal((await other("GET", `/photos/${photoId}`, undefined, { "if-none-match": etag })).status, 404);
+
+    await owner("DELETE", `/jobs/${job.id}/hazards/${id}/photos/${photoId}`);
+    assert.equal((await owner("GET", `/photos/${photoId}`, undefined, { "if-none-match": etag })).status, 404);
 });
 
 test("DB-21 photo rules: type, size, count and at least one", { skip }, async () => {

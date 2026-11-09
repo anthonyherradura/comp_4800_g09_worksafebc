@@ -67,16 +67,10 @@ function StatusSegments({ item, value, onSelect }) {
 
 export default function PlanningPage() {
     const { currentJob, setChecklistStatus, saveVisitNotes } = useJobs();
-    // The box keeps what is typed; it saves to the job once typing pauses. Starts again for another job.
-    const [notes, setNotes] = useState(currentJob?.visitNotes ?? "");
-    const [notesFor, setNotesFor] = useState(currentJob?.id);
-    if (notesFor !== currentJob?.id) {
-        setNotesFor(currentJob?.id);
-        setNotes(currentJob?.visitNotes ?? "");
-    }
+    // Shown from the job, with anything still being saved on top, so it survives leaving this page
+    const notes = currentJob?.visitNotes ?? "";
 
     const handleNotes = (event) => {
-        setNotes(event.target.value);
         if (currentJob) saveVisitNotes(currentJob.id, event.target.value);
     };
     const [openGroup, setOpenGroup] = useState(null); // null until the person opens one; the first group starts open

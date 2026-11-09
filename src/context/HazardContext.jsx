@@ -1,5 +1,5 @@
 import { createContext, useContext, useMemo, useRef, useState } from "react";
-import { api, photoUrl } from "../data/api";
+import { api, isTemporaryFailure, photoUrl } from "../data/api";
 import { shrinkImage } from "../data/store";
 import { useJobs } from "./JobContext";
 
@@ -16,12 +16,13 @@ async function toBlob(input) {
 // Photos are uploaded (shrunk first) and shown from /api/photos/<id>.
 //
 // Comment edits show at once and save when typing pauses. Until the server confirms them they are kept
-// as drafts on top of the job, so another change's answer can't put old text back in the box.
+// as drafts on top of the job, so another change's answer can't put old text back in the box. A save that
+// fails keeps its draft, so what was typed stays on screen, and it is tried again.
 export function HazardProvider({ children }) {
-    const { currentJob, saveQueue, change, replaceCurrentJob, reloadCurrentJob, reportError } = useJobs();
+    const { currentJob, saveQueue, change, replaceCurrentJob, confirmSavedJob, reloadCurrentJob, reportError } = useJobs();
     const jobId = currentJob?.id ?? null;
     const [drafts, setDrafts] = useState({}); // hazard id -> { comment?, notApplicable? } not yet confirmed
-    const unsent = useRef({}); // hazard id -> fields waiting in the save queue
+    const unsent = useRef({}); // hazard id -> newest fields the server hasn't confirmed, for the save queue to send
 
     // What the pages see: hazards with drafts applied and a photos list of URLs
     const hazards = useMemo(
@@ -45,12 +46,14 @@ export function HazardProvider({ children }) {
             return next;
         });
 
-    const forget = (id) =>
+    const forget = (id) => {
+        delete unsent.current[id];
         setDrafts((all) => {
             const next = { ...all };
             delete next[id];
             return next;
         });
+    };
 
     const addPhotos = (id, inputs) =>
         change(async () => {
@@ -92,21 +95,29 @@ export function HazardProvider({ children }) {
             unsent.current[id] = { ...unsent.current[id], ...fields };
             const key = `hazard:${jobId}:${id}`;
             const url = `/jobs/${jobId}/hazards/${id}`;
-            saveQueue.schedule(key, () => {
-                const sent = unsent.current[id];
-                delete unsent.current[id];
+            const save = () => {
+                const sent = { ...unsent.current[id] };
+                if (!Object.keys(sent).length) return Promise.resolve(); // a newer save already delivered these
                 return api("PATCH", url, sent, { keepalive: true })
                     .then(({ job }) => {
+                        for (const [field, value] of Object.entries(sent)) {
+                            if (unsent.current[id]?.[field] === value) delete unsent.current[id][field];
+                        }
                         // The server's job has this save; drafts typed since stay on top of it
-                        replaceCurrentJob(job);
+                        confirmSavedJob(job);
                         settle(id, sent);
                     })
                     .catch((err) => {
-                        forget(id);
                         reportError(err);
-                        reloadCurrentJob();
+                        if (err.status === 404) {
+                            forget(id); // the hazard is gone, so show what the server has
+                            reloadCurrentJob();
+                        } else if (isTemporaryFailure(err)) {
+                            saveQueue.retryLater(key, save);
+                        }
                     });
-            });
+            };
+            saveQueue.schedule(key, save);
             // Typing waits for a pause; a button press (not applicable) saves now
             if (!("comment" in fields)) saveQueue.send(key);
         }
