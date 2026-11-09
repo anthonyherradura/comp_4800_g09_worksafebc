@@ -1,3 +1,5 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import express from "express";
 import session from "express-session";
 import { MongoStore } from "connect-mongo";
@@ -11,12 +13,17 @@ import meRoutes from "./routes/me.js";
 
 
 const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days: officers are often offline at sites
+const DIST_DIR = fileURLToPath(new URL("../dist", import.meta.url));
 
 export function createApp() {
     const app = express();
 
     // Behind a proxy/host in production, so secure cookies and rate limiting see the real client
     if (config.isProduction) app.set("trust proxy", 1);
+
+    // In production this service also serves the built front end. It sits before the session
+    // so requests for static files don't read and touch the session in MongoDB.
+    if (config.isProduction) app.use(express.static(DIST_DIR));
 
     app.use(express.json());
     app.use(
@@ -51,6 +58,15 @@ export function createApp() {
     app.use("/api", (req, res) => {
         res.status(404).json({ error: "Not found." });
     });
+
+    // React Router pages like /home have no file, so they get index.html. A missing file
+    // (a path with an extension) stays a 404 rather than returning HTML in place of a script.
+    if (config.isProduction) {
+        app.get("/{*page}", (req, res, next) => {
+            if (path.extname(req.path)) return next();
+            res.sendFile("index.html", { root: DIST_DIR });
+        });
+    }
 
     // Express 5 forwards rejected promises from async handlers here
     // eslint-disable-next-line no-unused-vars
