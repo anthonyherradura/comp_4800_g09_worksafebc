@@ -31,6 +31,8 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // Leaves out the search model's .wasm files: 14-28 MB each, over Workbox's limit, which fails the build
+        globPatterns: ['**/*.{js,css,html}'],
         navigateFallback: '/index.html',
         // Never answer API calls with the app shell
         navigateFallbackDenylist: [/^\/api\//],
