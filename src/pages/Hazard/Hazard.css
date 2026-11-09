@@ -321,6 +321,16 @@
     color: var(--wsbc-warm-grey);
 }
 
+.hl-note {
+    align-self: flex-start;
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: var(--wsbc-pale-sunrise-yellow);
+    color: var(--wsbc-bodycopy);
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
 .hl-pill {
     display: inline-flex;
     align-items: center;

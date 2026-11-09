@@ -14,7 +14,7 @@ import "./Homepage.css";
 const byId = Object.fromEntries(SHEET_CATALOG.map((s) => [s.sheetId, s]));
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 const MAX_RECENT = 3;
-const DEFAULT_SHEETS = SHEET_CATALOG.slice(0, 2);
+const DEFAULT_SHEETS = SHEET_CATALOG;
 
 const CheckIcon = () => (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -102,6 +102,8 @@ export default function HomePage() {
     const hasRecent = recentSheets.length > 0;
     const listed = searching ? filtered : hasRecent ? recentSheets : DEFAULT_SHEETS;
     const listReady = searching || recentLoaded;
+    // So every sheet can still be browsed once there are recent ones
+    const otherSheets = hasRecent ? SHEET_CATALOG.filter((s) => !recentSheets.includes(s)) : [];
 
     function remember(sheetId) {
         setRecentIds((prev) => [sheetId, ...prev.filter((id) => id !== sheetId)].slice(0, MAX_RECENT));
@@ -308,6 +310,19 @@ export default function HomePage() {
                             ))}
                         </ul>
                     )}
+                </section>
+            )}
+
+            {listReady && !searching && otherSheets.length > 0 && (
+                <section aria-labelledby="all-sheets-heading">
+                    <h2 id="all-sheets-heading" className="home-section-heading">
+                        All sheets ({otherSheets.length})
+                    </h2>
+                    <ul className="home-panel">
+                        {otherSheets.map((s) => (
+                            <SheetOption key={s.sheetId} sheet={s} selected={s.sheetId === selected?.sheetId} onPick={pick} />
+                        ))}
+                    </ul>
                 </section>
             )}
 

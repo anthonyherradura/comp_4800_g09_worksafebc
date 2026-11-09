@@ -16,6 +16,8 @@ from pdfplumber.utils import extract_text
 
 START_PAGE = 3          # zero-based: skip cover, table of contents and blank page
 TOP, BOTTOM = 70, 60    # page header and footer margins in points
+HAZARD_SECTION = "Industry or Classification Unit Hazards"
+QUESTION = re.compile(r"Does this industry[^?]*\?", re.I)
 HEADER_LABELS = ("Phase", "Type of hazard", "Hazard/Violation/Topic", "Order Name", "Name of Resource")
 
 
@@ -41,6 +43,23 @@ def merge(values, gap):
         else:
             groups.append([(pos, w)])
     return [(sum(p * w for p, w in g) / sum(w for _, w in g), sum(w for _, w in g)) for g in groups]
+
+
+def split_questions(chunks):
+    """Some sheets print several "Does this industry…?" questions in one block. Each is a hazard, so give each its own chunk."""
+    out = []
+    for c in chunks:
+        found = list(QUESTION.finditer(c["text"]))
+        if c["section"] != HAZARD_SECTION or len(found) < 2:
+            out.append(c)
+            continue
+        before = c["text"][:found[0].start()].strip()
+        if before:
+            out.append({**c, "text": before, "regulations": regs_in(before)})
+        for m, end in zip(found, [f.start() for f in found[1:]] + [len(c["text"])]):
+            answer = c["text"][m.end():end].strip()
+            out.append({**c, "heading": m.group(), "text": answer or m.group(), "regulations": regs_in(answer)})
+    return out
 
 
 def table_grid(page):
@@ -197,6 +216,10 @@ def parse_sheet(path):
             merged[-1]["regulations"] = regs_in(merged[-1]["text"])
         else:
             merged.append(c)
+    merged = split_questions(merged)
+    for c, after in zip(reversed(merged[:-1]), reversed(merged[1:])):  # text before the first heading
+        c["section"] = c["section"] or after["section"]
+        c["heading"] = c["heading"] or c["section"]
     for i, c in enumerate(merged, 1):
         c["id"] = f"{c['sheetId']}-{i:03d}"
     return {"sheetId": f"cu-{cu}", "title": f"{title} (CU {cu})", "issued": issued,

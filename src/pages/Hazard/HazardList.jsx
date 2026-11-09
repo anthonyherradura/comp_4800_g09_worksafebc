@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useHazards } from "../../context/HazardContext";
 import { HAZARD_STATUS, STATUS_LABEL, groupByStatus, photoCount } from "../../data/hazardStatus";
+import { getSheetHazard } from "../../data/sheets";
 import { formatFindings } from "./formatFindings";
 import "./Hazard.css";
 
@@ -114,6 +115,9 @@ export default function HazardList() {
                                     <Link to={`/hazard/${h.id}`} className="hl-link">
                                         <span className="hl-text">
                                             <span className="hl-name">{h.name}</span>
+                                            {getSheetHazard(h.sheetId, h.sheetKey)?.notTypical && (
+                                                <span className="hl-note">Sheet says not typical</span>
+                                            )}
                                             <span className="hl-meta">
                                                 {tab === HAZARD_STATUS.REVIEWED && photoCount(h.photos.length)}
                                                 {tab === HAZARD_STATUS.UNADDRESSED && "Needs a photo, or mark not applicable"}

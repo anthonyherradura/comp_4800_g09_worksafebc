@@ -196,10 +196,10 @@ const ref = prepareReferenceData(sheetFiles);
 test("DB-1.12 reference data: counts match the PostgreSQL seed", () => {
     assert.deepEqual(
         { sheets: ref.sheets.length, sections: ref.sections.length, chunks: ref.chunks.length, regulations: ref.regulations.length, links: ref.links.length },
-        { sheets: 2, sections: 21, chunks: 104, regulations: 64, links: 103 },
+        { sheets: 4, sections: 23, chunks: 220, regulations: 106, links: 147 },
     );
-    assert.deepEqual(ref.sheets.map((s) => s.title).sort(), ["Log Transport", "Long-term Care"], "CU number removed from titles");
-    assert.equal(ref.chunks.filter((c) => c.isHazard).length, 54, "40 on Log Transport + 14 on Long-term Care");
+    assert.deepEqual(ref.sheets.map((s) => s.title).sort(), ["Log Transport", "Long-term Care", "Motion Picture, Commercial, or Television Production", "Performing Arts"], "CU number removed from titles");
+    assert.equal(ref.chunks.filter((c) => c.isHazard).length, 102, "40 Log Transport + 14 Long-term Care + 31 Performing Arts + 17 Motion Picture");
 });
 
 test("DB-1.13 reference data: every document passes its model and database validator", () => {

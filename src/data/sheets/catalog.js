@@ -11,8 +11,9 @@ export function splitTitle(title) {
 
 // The sheet's own description of the work it covers (its first section), trimmed
 function summarize(sheet) {
-    const intro =
-        sheet.chunks.find((c) => /classification unit information/i.test(c.section)) ?? sheet.chunks[0];
+    const info = sheet.chunks.filter((c) => /classification unit information/i.test(c.section));
+    // Some sheets give the unit's name a section of its own before the description
+    const intro = info.find((c) => /this classification unit (covers|description)/i.test(c.text)) ?? info[0] ?? sheet.chunks[0];
     const text = (intro?.text ?? "").replace(/\s+/g, " ").trim();
     return text.length > SUMMARY_CHARS ? `${text.slice(0, SUMMARY_CHARS)}…` : text;
 }

@@ -9,6 +9,8 @@ import { syncSheetHazards } from "../src/data/syncSheetHazards.js";
 const readSheet = (file) => JSON.parse(readFileSync(new URL(`../src/data/sheets/${file}.json`, import.meta.url)));
 const logTransport = readSheet("cu-732044-log-transport");
 const longTermCare = readSheet("cu-766011-long-term-care");
+const performingArts = readSheet("cu-761030-performing-arts");
+const motionPicture = readSheet("cu-763025-motion-picture");
 
 test("CON-01 control-table sheet: one hazard per Hazard block, with stage, controls and legislation", () => {
     const hazards = sheetHazards(logTransport);
@@ -64,6 +66,35 @@ test("CON-06 checklist from a PPE section is split into sentences", () => {
         sheetChecklist(longTermCare).map((i) => i.label),
         ["PPE according to the site’s ECPs and safe work procedures.", "Respiratory protection if unable to receive flu immunization."]
     );
+});
+
+test("CON-07 sheets that repeat the question in the text: one hazard per question and per named topic", () => {
+    const names = sheetHazards(performingArts).map((h) => h.name);
+    assert.equal(names.length, 31);
+    for (const name of ["Working from heights", "Exposure Control Plans (ECPs)", "Rigging", "Explosives and pyrotechnics", "Front of house"]) {
+        assert.ok(names.includes(name), name);
+    }
+    assert.equal(sheetHazards(motionPicture).length, 17);
+    for (const hazards of [sheetHazards(performingArts), sheetHazards(motionPicture)]) {
+        assert.ok(hazards.every((h) => !/^(Does this|Industry or Classification)/.test(h.name)), "no question or section left as a name");
+        assert.equal(new Set(hazards.map((h) => h.key)).size, hazards.length);
+        assert.ok(hazards.every((h) => h.details.length > 0 && !h.details.some((d) => /Does this industry|please explain/.test(d))));
+    }
+});
+
+test("CON-08 checklist uses the officer's own PPE when the sheet lists it, with the run-together list split", () => {
+    const labels = sheetChecklist(performingArts).map((i) => i.label);
+    assert.ok(labels.includes("Hard hats – when overhead hazards are present"));
+    assert.ok(labels.every((l) => !/Does this industry|Not applicable|around the worker/.test(l)));
+    assert.deepEqual(sheetChecklist(motionPicture).map((i) => i.label).slice(0, 2), ["High visibility apparel", "Safety footwear"]);
+});
+
+test("CON-09 only hazards the sheet itself calls not typical are flagged", () => {
+    const flagged = (sheet) => sheetHazards(sheet).filter((h) => h.notTypical).map((h) => h.name);
+    assert.deepEqual(flagged(motionPicture), ["Confined space entry", "Working alone", "Toxic Process Gases"]);
+    assert.deepEqual(flagged(performingArts), ["Working alone"]);
+    assert.deepEqual(flagged(longTermCare), []);
+    assert.deepEqual(flagged(logTransport), []);
 });
 
 // ---------- syncSheetHazards ----------

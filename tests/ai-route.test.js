@@ -240,7 +240,7 @@ test("SHEET-02 description: 200 with the matches, and Gemini gets every sheet in
     assert.equal(res.status, 200);
     assert.deepEqual(res.body, { matches: [{ sheetId: "cu-732044", reason: "Logging truck hauling logs" }] });
     assert.equal(serviceCalls[0].text, "truck hauling logs to the mill");
-    assert.deepEqual(serviceCalls[0].sheets.map((s) => s.sheetId).sort(), ["cu-732044", "cu-766011"]);
+    assert.deepEqual(serviceCalls[0].sheets.map((s) => s.sheetId).sort(), ["cu-732044", "cu-761030", "cu-763025", "cu-766011"]);
     assert.ok(serviceCalls[0].sheets.every((s) => s.name && s.summary));
 });
 
