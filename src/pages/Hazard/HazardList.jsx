@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useHazards } from "../../context/HazardContext";
 import { HAZARD_STATUS, STATUS_LABEL, groupByStatus, photoCount } from "../../data/hazardStatus";
+import { getSheetHazard } from "../../data/sheets";
 import { formatFindings } from "./formatFindings";
 import "./Hazard.css";
 
@@ -12,19 +13,9 @@ const TABS = [
     { status: HAZARD_STATUS.NOT_APPLICABLE, key: "na", heading: "Not applicable" },
 ];
 
-// Placeholder page for the Search button (see HazardSearch.jsx)
-const SEARCH_ROUTE = "/hazard/search";
-
 const PlusIcon = () => (
     <svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="M12 4v16M4 12h16" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-    </svg>
-);
-
-const SearchIcon = () => (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" strokeWidth="2.4" />
-        <path d="m15.5 15.5 5 5" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
     </svg>
 );
 
@@ -85,7 +76,7 @@ export default function HazardList() {
             {hazards.length === 0 ? (
                 <p className="hl-empty">
                     No hazards yet. Pick a protocol sheet on <Link to="/home">Home</Link> to load its hazards, or tap
-                    “Add hazard”.
+                    “Log hazard”.
                 </p>
             ) : (
                 <div className="hl-tabs" role="tablist" aria-label="Hazard status">
@@ -110,14 +101,9 @@ export default function HazardList() {
             )}
 
             <div className="hl-tools">
-                {/* For now this opens a placeholder page. Photo-to-hazard suggestions will live there. */}
-                <Link to={SEARCH_ROUTE} className="hl-tool">
-                    <SearchIcon />
-                    Search
-                </Link>
                 <Link to="/hazard/new" className="hl-tool hl-tool--primary">
                     <PlusIcon />
-                    Add hazard
+                    Log hazard
                 </Link>
             </div>
 
@@ -134,6 +120,9 @@ export default function HazardList() {
                                     <Link to={`/hazard/${h.id}`} className="hl-link">
                                         <span className="hl-text">
                                             <span className="hl-name">{h.name}</span>
+                                            {getSheetHazard(h.sheetId, h.sheetKey)?.notTypical && (
+                                                <span className="hl-note">Sheet says not typical</span>
+                                            )}
                                             <span className="hl-meta">
                                                 {tab === HAZARD_STATUS.REVIEWED && photoCount(h.photos.length)}
                                                 {tab === HAZARD_STATUS.UNADDRESSED && "Needs a photo, or mark not applicable"}
