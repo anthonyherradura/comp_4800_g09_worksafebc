@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useHazards } from "../../context/HazardContext";
 import { STATUS_LABEL, getHazardStatus } from "../../data/hazardStatus";
 import { getSheetHazard } from "../../data/sheets";
-import { BackIcon, CameraPlusIcon } from "./HazardIcons";
+import { BackIcon, CameraPlusIcon, CloseIcon } from "./HazardIcons";
 import "./Hazard.css";
 
 const CheckCircleIcon = () => (
@@ -140,6 +140,12 @@ export default function HazardDetail() {
         e.target.value = "";
     };
 
+    const handleRemovePhoto = (url) => {
+        if (window.confirm("Remove this photo? This can't be undone.")) {
+            updateHazard(id, { photos: hazard.photos.filter((p) => p !== url) });
+        }
+    };
+
     const handleDelete = async () => {
         if (window.confirm(`Delete "${hazard.name}"? This can't be undone.`)) {
             // Back to the list once the server has deleted it, so it doesn't show there for a moment
@@ -227,8 +233,18 @@ export default function HazardDetail() {
                         <p className="hd-gallery-empty">No photos yet</p>
                     ) : (
                         <div className="hd-gallery">
-                            {hazard.photos.map((url) => (
-                                <img key={url} src={url} alt="Hazard" />
+                            {hazard.photos.map((url, i) => (
+                                <div key={url} className="hd-photo">
+                                    <img src={url} alt={`Hazard photo ${i + 1}`} />
+                                    <button
+                                        type="button"
+                                        className="hd-photo-remove"
+                                        aria-label={`Remove photo ${i + 1}`}
+                                        onClick={() => handleRemovePhoto(url)}
+                                    >
+                                        <CloseIcon />
+                                    </button>
+                                </div>
                             ))}
                         </div>
                     )}
