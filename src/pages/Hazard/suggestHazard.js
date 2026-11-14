@@ -1,5 +1,6 @@
 // Asks the server (which asks Gemini) for a hazard suggestion, and whether it is one of the job's hazards.
-// hazards: [{ id, name }]. Resolves to { suggestion, matchId } (matchId is null for a new hazard).
+// hazards: [{ id, name }]. Resolves to { suggestion, matchId, description }: matchId is null for a new hazard,
+// and description is the AI's write-up of what it saw ("" if none).
 // Throws Error(message) on failure, same style as the auth service.
 export async function suggestHazard({ text, photoFile, hazards = [] }) {
     const body = new FormData();
@@ -16,5 +17,5 @@ export async function suggestHazard({ text, photoFile, hazards = [] }) {
     }
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || "Couldn't get a suggestion. Try again.");
-    return { suggestion: data.suggestion, matchId: data.matchId ?? null };
+    return { suggestion: data.suggestion, matchId: data.matchId ?? null, description: data.description ?? "" };
 }

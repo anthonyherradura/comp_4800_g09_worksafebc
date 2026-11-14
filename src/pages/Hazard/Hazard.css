@@ -755,6 +755,19 @@
     resize: none;
 }
 
+.ha-suggest-label {
+    margin: 0 0 -6px;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--wsbc-bodycopy);
+}
+
+/* The AI's write-up: ordinary text, and the officer can drag it taller */
+.ha-suggest-description {
+    font-weight: 400;
+    resize: vertical;
+}
+
 /* ---------- Accept / Clear ---------- */
 .ha-actions {
     display: flex;

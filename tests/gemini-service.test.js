@@ -231,6 +231,7 @@ test("GEM-19 suggestHazardMatch sends the job's hazards and returns the matching
     assert.deepEqual(await suggestHazardMatch({ text: "ladder", hazards: JOB_HAZARDS }), {
         suggestion: "Unsecured Ladder",
         matchId: "h1",
+        description: "",
     });
     assert.match(calls[0].contents[0].text, /h2 \| Chain binders/);
     assert.equal(calls[0].config.responseMimeType, "application/json");
@@ -240,7 +241,7 @@ test("GEM-20 suggestHazardMatch: no match or a made-up id means a new hazard", a
     for (const matchId of ["", "h99"]) {
         setup(t, { "primary-model": json({ name: "Blocked Exit", matchId }) });
         const answer = await suggestHazardMatch({ text: "exit", hazards: JOB_HAZARDS });
-        assert.deepEqual(answer, { suggestion: "Blocked Exit", matchId: null });
+        assert.deepEqual(answer, { suggestion: "Blocked Exit", matchId: null, description: "" });
         t.mock.timers.reset();
     }
 });
@@ -260,4 +261,39 @@ test("GEM-22 every prompt tells Gemini to answer in English (B-23)", async (t) =
     await matchSheets({ text: "x", sheets: SHEETS });
     assert.equal(calls.length, 3);
     for (const call of calls) assert.match(call.config.systemInstruction, /Always write in English/);
+});
+
+test("GEM-23 suggestHazardMatch writes up a new hazard: observation, then up to 3 concerns to confirm", async (t) => {
+    setup(t, {
+        "primary-model": json({
+            name: "Workers On Roof Without Guardrails",
+            matchId: "",
+            observation: "  Two workers are on a sloped roof.\n No guardrails are visible. ",
+            concerns: [
+                { topic: "Fall protection:", detail: "Check how the workers are tied off." },
+                { topic: "Housekeeping", detail: "Debris on the ground near the walkway." },
+                { topic: "", detail: "no topic, dropped" },
+                { topic: "Third", detail: "Kept." },
+                { topic: "Fourth", detail: "Over the limit, dropped." },
+            ],
+        }),
+    });
+    const answer = await suggestHazardMatch({ text: "", photo: { mimetype: "image/jpeg", buffer: Buffer.from("x") }, hazards: [] });
+    assert.equal(answer.matchId, null);
+    assert.equal(
+        answer.description,
+        "Two workers are on a sloped roof. No guardrails are visible.\n\nPossible concerns to confirm:\n" +
+            "- Fall protection: Check how the workers are tied off.\n- Housekeeping: Debris on the ground near the walkway.\n- Third: Kept."
+    );
+    assert.match(calls[0].contents[0].text, /None yet/);
+    assert.match(calls[0].config.systemInstruction, /Never say that anything is a violation/);
+});
+
+test("GEM-24 suggestHazardMatch: no hazard identified means no description and no match", async (t) => {
+    setup(t, { "primary-model": json({ name: "No hazard identified", matchId: "h1", observation: "A desk.", concerns: [] }) });
+    assert.deepEqual(await suggestHazardMatch({ text: "coffee cup", hazards: JOB_HAZARDS }), {
+        suggestion: "No hazard identified",
+        matchId: null,
+        description: "",
+    });
 });

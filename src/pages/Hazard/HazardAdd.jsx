@@ -46,6 +46,7 @@ export default function HazardAdd() {
     const [photoFile, setPhotoFile] = useState(null); // sent to the AI
     const [photo, setPhoto] = useState(null); // preview URL, also saved with the hazard
     const [suggestion, setSuggestion] = useState(""); // editable once the AI has answered
+    const [description, setDescription] = useState(""); // the AI's write-up, editable; becomes the new hazard's comment
     const [suggested, setSuggested] = useState(false); // true once there is a suggestion to show
     const [matchId, setMatchId] = useState(null); // the existing hazard the AI says this is the same as
     const [noHazard, setNoHazard] = useState(false); // the AI found nothing, so there is no name to accept
@@ -60,6 +61,7 @@ export default function HazardAdd() {
 
     const resetSuggestion = () => {
         setSuggestion("");
+        setDescription("");
         setSuggested(false);
         setMatchId(null);
         setNoHazard(false);
@@ -93,6 +95,7 @@ export default function HazardAdd() {
             const none = answer.suggestion.trim().toLowerCase() === NO_HAZARD;
             setNoHazard(none);
             setSuggestion(none ? "" : answer.suggestion);
+            setDescription(answer.description);
             setMatchId(none ? null : answer.matchId);
             setSuggested(true);
         } catch (err) {
@@ -128,7 +131,8 @@ export default function HazardAdd() {
             return;
         }
         setSaving(true);
-        const id = await addHazard({ name, photo, comment: note });
+        const comment = [note, description.trim()].filter(Boolean).join("\n\n");
+        const id = await addHazard({ name, photo, comment });
         setSaving(false);
         if (id) navigate(`/hazard/${id}`); // if not, the save error shows and the form keeps its input
     };
@@ -248,10 +252,13 @@ export default function HazardAdd() {
 
                 {phase === "ready" && !match && (
                     <>
+                        <label className="ha-suggest-label" htmlFor="ha-name">
+                            Hazard name
+                        </label>
                         <textarea
+                            id="ha-name"
                             className="ha-suggest-input"
                             rows={2}
-                            aria-label="Suggested hazard name"
                             placeholder={noHazard ? "Type a hazard name" : undefined}
                             maxLength={200}
                             value={suggestion}
@@ -261,6 +268,21 @@ export default function HazardAdd() {
                             {noHazard
                                 ? "The AI didn't find a hazard. Type a name if you still want to log one."
                                 : "Edit the name if needed, then Accept."}
+                        </p>
+                        <label className="ha-suggest-label" htmlFor="ha-description">
+                            Description
+                        </label>
+                        <textarea
+                            id="ha-description"
+                            className="ha-suggest-input ha-suggest-description"
+                            rows={7}
+                            maxLength={4000}
+                            placeholder="Add a description (optional)"
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                        />
+                        <p className="ha-suggest-text">
+                            Saved as the hazard's comment. Check it against what you see: it's only a suggestion.
                         </p>
                     </>
                 )}

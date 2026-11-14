@@ -14,9 +14,13 @@ mock.module("../server/services/gemini.js", {
             serviceCalls.push(input);
             return fakeSuggest(input);
         },
+        // The route always calls this; with no hazards it answers like the plain suggestion
         suggestHazardMatch: async (input) => {
             serviceCalls.push(input);
-            return { suggestion: "Unsecured Ladder", matchId: input.hazards[0].id };
+            if (!input.hazards.length) {
+                return { suggestion: await fakeSuggest(input), matchId: null, description: "" };
+            }
+            return { suggestion: "Unsecured Ladder", matchId: input.hazards[0].id, description: "Ladder not tied off." };
         },
         matchSheets: async (input) => {
             serviceCalls.push(input);
@@ -86,7 +90,7 @@ test("AI-02 text only: 200 with the suggestion, text is trimmed", async () => {
     reset();
     const res = await post(url, form({ text: "  extension ladder at a steep angle, not tied off  " }));
     assert.equal(res.status, 200);
-    assert.deepEqual(res.body, { suggestion: "Unsecured Ladder" });
+    assert.deepEqual(res.body, { suggestion: "Unsecured Ladder", matchId: null, description: "" });
     assert.equal(serviceCalls[0].text, "extension ladder at a steep angle, not tied off");
     assert.equal(serviceCalls[0].photo, undefined);
 });
@@ -298,7 +302,7 @@ test("MATCH-01 with the job's hazards the route returns the matching hazard id",
     body.append("hazards", JSON.stringify([{ id: "h1", name: " Falls " }, { name: "no id" }]));
     const res = await post(url, body);
     assert.equal(res.status, 200);
-    assert.deepEqual(res.body, { suggestion: "Unsecured Ladder", matchId: "h1" });
+    assert.deepEqual(res.body, { suggestion: "Unsecured Ladder", matchId: "h1", description: "Ladder not tied off." });
     assert.deepEqual(serviceCalls[0].hazards, [{ id: "h1", name: "Falls" }]);
 });
 
@@ -308,5 +312,6 @@ test("MATCH-02 a malformed hazards field still gets a plain suggestion", async (
     body.append("hazards", "{not json");
     const res = await post(url, body);
     assert.equal(res.status, 200);
-    assert.deepEqual(res.body, { suggestion: "Unsecured Ladder" });
+    assert.deepEqual(res.body, { suggestion: "Unsecured Ladder", matchId: null, description: "" });
+    assert.deepEqual(serviceCalls[0].hazards, []);
 });

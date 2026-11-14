@@ -1,6 +1,7 @@
 // AI API. Needs a signed-in officer.
-//   POST /api/ai/suggest-hazard  (multipart: text?, photo?, hazards?)  -> 200 { suggestion, matchId? }
-//        hazards is a JSON list of the job's [{ id, name }]; matchId is the one the input is the same as, or null
+//   POST /api/ai/suggest-hazard  (multipart: text?, photo?, hazards?)  -> 200 { suggestion, matchId, description }
+//        hazards is a JSON list of the job's [{ id, name }]; matchId is the one the input is the same as, or null;
+//        description is a write-up of what was seen, for the officer to edit ("" when no hazard was found)
 //   POST /api/ai/match-sheet     (multipart: text?, photo?)  -> 200 { matches: [{ sheetId, reason }] }
 // Errors are { error } with a message that is safe to show to the officer.
 
@@ -8,7 +9,7 @@ import { Router } from "express";
 import multer from "multer";
 import { rateLimit } from "express-rate-limit";
 import requireAuth from "../middleware/requireAuth.js";
-import { matchSheets, suggestHazard, suggestHazardMatch } from "../services/gemini.js";
+import { matchSheets, suggestHazardMatch } from "../services/gemini.js";
 import { SHEET_CATALOG } from "../services/sheetCatalog.js";
 
 const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
@@ -98,12 +99,7 @@ router.post("/suggest-hazard", requireAuth, aiLimiter, uploadPhoto, async (req, 
     if (!input) return;
 
     try {
-        const hazards = readHazards(req);
-        res.json(
-            hazards.length
-                ? await suggestHazardMatch({ ...input, hazards })
-                : { suggestion: await suggestHazard(input) }
-        );
+        res.json(await suggestHazardMatch({ ...input, hazards: readHazards(req) }));
     } catch (err) {
         sendGeminiError(res, err);
     }
